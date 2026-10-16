@@ -5,16 +5,15 @@ const footerLinks = [
   { label: 'About', href: '#about' },
   { label: 'Services', href: '#services' },
   { label: 'Portfolio', href: '#portfolio' },
-  { label: 'Partnership', href: '#partnership' },
   { label: 'News', href: '#news' },
   { label: 'Kost & Property', href: '#property' },
   { label: 'Contact', href: '#contact' },
 ];
 
 const socialLinks = [
-  { icon: Instagram, label: 'Instagram', href: '#' },
-  { icon: Mail, label: 'Email', href: '#' },
-  { icon: Phone, label: 'WhatsApp', href: '#' },
+  { icon: Instagram, label: 'Instagram', href: 'https://instagram.com/digitalcreativemedia' },
+  { icon: Mail, label: 'Email', href: 'mailto:contact@digitalcreativemedia.id' },
+  { icon: Phone, label: 'WhatsApp', href: 'https://wa.me/6281234567890?text=Halo%20CV%20Digital%20Creative%20Media' },
 ];
 
 export default function Footer() {
