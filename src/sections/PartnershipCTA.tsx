@@ -5,7 +5,7 @@ export default function PartnershipCTA() {
   const { ref, visible } = useReveal<HTMLDivElement>();
 
   return (
-    <section id="partnership" className="py-20 md:py-28 bg-white border-t border-border">
+    <section id="collaborate" className="py-20 md:py-28 bg-white border-t border-border">
       <div className="container-max px-6 md:px-10 lg:px-16">
         <div
           ref={ref}

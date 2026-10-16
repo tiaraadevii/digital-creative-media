@@ -4,6 +4,7 @@ import Hero from '@/sections/Hero';
 import About from '@/sections/About';
 import Services from '@/sections/Services';
 import PortfolioPreview from '@/sections/PortfolioPreview';
+import Partners from '@/sections/Partners';
 import NewsPreview from '@/sections/NewsPreview';
 import PropertyPreview from '@/sections/PropertyPreview';
 import PartnershipCTA from '@/sections/PartnershipCTA';
@@ -18,6 +19,7 @@ function App() {
         <About />
         <Services />
         <PortfolioPreview />
+        <Partners />
         <NewsPreview />
         <PropertyPreview />
         <PartnershipCTA />
