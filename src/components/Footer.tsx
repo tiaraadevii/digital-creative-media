@@ -12,9 +12,9 @@ const footerLinks = [
 ];
 
 const socialLinks = [
-  { icon: Instagram, label: 'Instagram', href: 'https://instagram.com/digitalcreativemedia' },
-  { icon: Mail, label: 'Email', href: 'mailto:contact@digitalcreativemedia.id' },
-  { icon: Phone, label: 'WhatsApp', href: 'https://wa.me/6281234567890?text=Halo%20CV%20Digital%20Creative%20Media' },
+  { icon: Instagram, label: '@carikostmalang', href: 'https://instagram.com/carikostmalang' },
+  { icon: Mail, label: 'carikostmalang@gmail.com', href: 'mailto:carikostmalang@gmail.com' },
+  { icon: Phone, label: '+62 812-9512-9528', href: 'https://wa.me/6281295129528?text=Halo%20CV%20Digital%20Creative%20Media' },
 ];
 
 export default function Footer() {
@@ -30,9 +30,12 @@ export default function Footer() {
               </div>
               <span className="text-white font-semibold text-sm">CV Digital Creative Media</span>
             </div>
-            <p className="text-white/50 text-sm leading-relaxed max-w-sm">
+            <p className="text-white/50 text-sm leading-relaxed max-w-sm mb-3">
               Connecting ideas, brands, and communities through digital media, creative services,
               and property management.
+            </p>
+            <p className="text-white/40 text-xs leading-relaxed max-w-sm">
+              📍 Perumahan Sengkaling Indah 1, Sengkaling, Mulyoagung, Kab. Malang
             </p>
           </div>
 
@@ -63,6 +66,8 @@ export default function Footer() {
                   <li key={social.label}>
                     <a
                       href={social.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
                       className="inline-flex items-center gap-2.5 text-white/50 text-sm hover:text-gold transition-colors duration-150"
                     >
                       <Icon className="w-4 h-4" />
@@ -79,10 +84,10 @@ export default function Footer() {
         {/* Bottom */}
         <div className="border-t border-white/10 mt-10 pt-6 flex flex-col sm:flex-row items-center justify-between gap-3">
           <p className="text-white/40 text-xs">
-            CV Digital Creative Media. All rights reserved.
+            © {new Date().getFullYear()} CV Digital Creative Media. All rights reserved.
           </p>
           <p className="text-white/30 text-xs">
-            Placeholder content — replace with official information.
+            Malang, Jawa Timur — Indonesia
           </p>
         </div>
       </div>

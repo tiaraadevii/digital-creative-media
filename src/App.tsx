@@ -10,6 +10,8 @@ import PropertyPreview from '@/sections/PropertyPreview';
 import PartnershipCTA from '@/sections/PartnershipCTA';
 import Contact from '@/sections/Contact';
 
+import FloatingWhatsApp from '@/components/FloatingWhatsApp';
+
 function App() {
   return (
     <div className="min-h-screen bg-white">
@@ -26,6 +28,7 @@ function App() {
         <Contact />
       </main>
       <Footer />
+      <FloatingWhatsApp phoneNumber="6281295129528" />
     </div>
   );
 }

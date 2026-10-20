@@ -27,7 +27,7 @@ export default function Contact() {
     setSubmitted(true);
   };
 
-  const officialWhatsAppNumber = '6281234567890'; // Official number
+  const officialWhatsAppNumber = '6281295129528'; // Official number
   const waUrl = `https://wa.me/${officialWhatsAppNumber}?text=${encodeURIComponent(
     `Halo CV Digital Creative Media,\n\nSaya: ${formState.name || 'Calon Partner'}\nKontak: ${formState.contact || '-'}\nKategori Kebutuhan: ${formState.type || 'Partnership'}\n\nPesan:\n${formState.message || 'Saya ingin berdiskusi mengenai peluang kerjasama.'}`
   )}`;
@@ -55,34 +55,34 @@ export default function Contact() {
               {
                 icon: Phone,
                 label: 'WhatsApp Resmi',
-                value: '+62 812-3456-7890',
+                value: '+62 812-9512-9528',
                 href: `https://wa.me/${officialWhatsAppNumber}?text=${encodeURIComponent('Halo CV Digital Creative Media, saya ingin berkolaborasi.')}`,
                 actionText: 'Chat Langsung di WhatsApp →',
                 isExternal: true,
               },
               {
                 icon: Mail,
-                label: 'Email',
-                value: 'contact@digitalcreativemedia.id',
-                href: 'mailto:contact@digitalcreativemedia.id',
+                label: 'Email Resmi',
+                value: 'carikostmalang@gmail.com',
+                href: 'mailto:carikostmalang@gmail.com',
                 actionText: 'Kirim Email Resmi →',
                 isExternal: false,
               },
               {
                 icon: Instagram,
                 label: 'Instagram',
-                value: '@digitalcreativemedia',
-                href: 'https://instagram.com/digitalcreativemedia',
+                value: '@carikostmalang',
+                href: 'https://instagram.com/carikostmalang',
                 actionText: 'Kunjungi Profil Instagram →',
                 isExternal: true,
               },
               {
                 icon: MapPin,
                 label: 'Kantor Operasional',
-                value: 'Kota Malang, Jawa Timur',
-                href: '#',
-                actionText: 'Malang & Sekitarnya',
-                isExternal: false,
+                value: 'Perumahan Sengkaling Indah 1, Sengkaling, Mulyoagung, Kab. Malang',
+                href: 'https://maps.google.com/?q=Perumahan+Sengkaling+Indah+1+Mulyoagung+Malang',
+                actionText: 'Buka di Google Maps →',
+                isExternal: true,
               },
             ].map((item) => {
               const Icon = item.icon;
