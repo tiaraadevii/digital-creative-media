@@ -1,9 +1,7 @@
 name: Deploy to GitHub Pages
 
 on:
-  push:
-    branches:
-      - main
+  # Jalankan hanya saat disetujui secara manual (klik tombol 'Run workflow' di GitHub Actions)
   workflow_dispatch:
 
 permissions:
