@@ -86,9 +86,16 @@ export default function Footer() {
           <p className="text-white/40 text-xs">
             © {new Date().getFullYear()} CV Digital Creative Media. All rights reserved.
           </p>
-          <p className="text-white/30 text-xs">
-            Malang, Jawa Timur — Indonesia
-          </p>
+          <div className="flex items-center gap-4 text-xs text-white/30">
+            <span>Malang, Jawa Timur — Indonesia</span>
+            <span>·</span>
+            <a
+              href="/admin/login"
+              className="text-white/40 hover:text-gold transition-colors"
+            >
+              Admin
+            </a>
+          </div>
         </div>
       </div>
     </footer>

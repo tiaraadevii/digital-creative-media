@@ -1,3 +1,4 @@
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import Hero from '@/sections/Hero';
@@ -9,10 +10,13 @@ import NewsPreview from '@/sections/NewsPreview';
 import PropertyPreview from '@/sections/PropertyPreview';
 import PartnershipCTA from '@/sections/PartnershipCTA';
 import Contact from '@/sections/Contact';
-
 import FloatingWhatsApp from '@/components/FloatingWhatsApp';
 
-function App() {
+import AdminLogin from '@/admin/AdminLogin';
+import AdminDashboard from '@/admin/AdminDashboard';
+import AdminGuard from '@/admin/AdminGuard';
+
+function LandingPage() {
   return (
     <div className="min-h-screen bg-white">
       <Navbar />
@@ -33,4 +37,28 @@ function App() {
   );
 }
 
-export default App;
+export default function App() {
+  return (
+    <BrowserRouter>
+      <Routes>
+        {/* Main Website */}
+        <Route path="/" element={<LandingPage />} />
+
+        {/* Admin Routes */}
+        <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
+        <Route path="/admin/login" element={<AdminLogin />} />
+        <Route
+          path="/admin/dashboard"
+          element={
+            <AdminGuard>
+              <AdminDashboard />
+            </AdminGuard>
+          }
+        />
+
+        {/* Fallback */}
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </BrowserRouter>
+  );
+}
