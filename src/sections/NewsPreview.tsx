@@ -1,63 +1,20 @@
-import { useState } from 'react';
-import { ArrowRight, Calendar, X, User, Share2 } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { ArrowRight, Calendar, X, User } from 'lucide-react';
 import { useReveal } from '@/hooks/useReveal';
-
-interface Article {
-  image: string;
-  category: string;
-  title: string;
-  desc: string;
-  content: string[];
-  date: string;
-  author: string;
-  isDemo: boolean;
-}
-
-const articles: Article[] = [
-  {
-    image: 'https://images.pexels.com/photos/33411321/pexels-photo-33411321.jpeg?auto=compress&cs=tinysrgb&h=650&w=940',
-    category: 'Event Highlights',
-    title: 'Behind the Scenes of Event Coverage',
-    desc: 'Melihat lebih dekat bagaimana tim kami menangkap dan mempublikasikan momen-momen acara secara presisi dan sinematik.',
-    content: [
-      'Menghadiri sebuah festival musik atau kompetisi lari adalah tentang menangkap atmosfer dan energi murni para peserta. Di balik setiap video aftermovie berdurasi satu menit yang viral, terdapat perencanaan matang mulai dari penentuan titik strategis kamera, pencahayaan panggung, hingga alur koordinasi cepat untuk live story di media sosial.',
-      'Melalui integrasi liputan langsung dan produksi kreatif, tim CV Digital Creative Media memastikan momen puncak acara dapat dinikmati bukan hanya oleh mereka yang hadir di venue, melainkan juga audiens digital di seluruh Indonesia.',
-    ],
-    date: '12 Apr 2026',
-    author: 'DCM Media Production Team',
-    isDemo: true,
-  },
-  {
-    image: 'https://images.pexels.com/photos/7661590/pexels-photo-7661590.jpeg?auto=compress&cs=tinysrgb&h=650&w=940',
-    category: 'Partnership Updates',
-    title: 'Building Meaningful Brand Partnerships',
-    desc: 'Pendekatan strategis kami dalam menghubungkan brand komersial dengan komunitas pemuda dan mahasiswa.',
-    content: [
-      'Kemitraan yang berhasil bukan sekadar menaruh logo di poster acara. Kemitraan yang bernilai tinggi menciptakan pengalaman relevan bagi audiens target—mulai dari aktivasi booth interaktif, sampling produk, hingga kolaborasi kampanye konten digital yang mengedukasi.',
-      'CV Digital Creative Media bertindak sebagai jembatan yang menghubungkan visi brand dengan kultur lokal, menghadirkan interaksi autentik yang menghasilkan loyalitas jangka panjang bagi para mitra.',
-    ],
-    date: '8 Apr 2026',
-    author: 'Partnership Lead DCM',
-    isDemo: true,
-  },
-  {
-    image: 'https://images.pexels.com/photos/17608520/pexels-photo-17608520.jpeg?auto=compress&cs=tinysrgb&h=650&w=940',
-    category: 'Digital & Creative Insights',
-    title: 'Digital Media Trends to Watch in 2026',
-    desc: 'Menjelajahi tren mutakhir dalam strategi konten media digital, video pendek, dan komunikasi visual.',
-    content: [
-      'Format video vertikal (Reels, TikTok, Shorts) kini memegang peranan mutlak dalam pengambilan keputusan konsumen muda, terutama di sektor kuliner, gaya hidup, dan pencarian hunian kost mahasiswa.',
-      'Memahami algoritma dan preferensi visual audiens generasi baru adalah kunci bagi brand dan pengelola properti untuk tetap relevan dan kompetitif di era digital.',
-    ],
-    date: '2 Apr 2026',
-    author: 'Creative Director DCM',
-    isDemo: true,
-  },
-];
+import { getArticles } from '@/services/articlesStorage';
+import { ArticleItem } from '@/types/article';
 
 export default function NewsPreview() {
   const { ref, visible } = useReveal<HTMLDivElement>();
-  const [selectedArticle, setSelectedArticle] = useState<Article | null>(null);
+  const [items, setItems] = useState<ArticleItem[]>([]);
+  const [selectedArticle, setSelectedArticle] = useState<ArticleItem | null>(null);
+
+  useEffect(() => {
+    const all = getArticles();
+    // Only display published articles on public site
+    const published = all.filter((a) => a.status === 'Published');
+    setItems(published);
+  }, []);
 
   return (
     <section id="news" className="py-20 md:py-28 bg-white border-t border-border">
@@ -86,16 +43,16 @@ export default function NewsPreview() {
           ref={ref}
           className={`reveal ${visible ? 'is-visible' : ''} grid md:grid-cols-2 lg:grid-cols-3 gap-6`}
         >
-          {articles.map((article) => (
+          {items.map((article) => (
             <article
-              key={article.title}
+              key={article.id}
               onClick={() => setSelectedArticle(article)}
               className="card group cursor-pointer flex flex-col justify-between"
             >
               <div>
                 <div className="aspect-[16/10] overflow-hidden bg-offwhite relative">
                   <img
-                    src={article.image}
+                    src={article.coverImage}
                     alt={article.title}
                     className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                     loading="lazy"
@@ -109,7 +66,7 @@ export default function NewsPreview() {
                 <div className="p-6">
                   <div className="flex items-center gap-3 mb-3">
                     <span className="text-gold text-xs font-semibold uppercase tracking-wider">
-                      {article.category}
+                      Artikel & Wawasan
                     </span>
                     <span className="flex items-center gap-1 text-slate/60 text-xs">
                       <Calendar className="w-3 h-3" />
@@ -119,7 +76,9 @@ export default function NewsPreview() {
                   <h3 className="text-lg font-semibold text-navy mb-2 group-hover:text-gold transition-colors duration-200 line-clamp-2">
                     {article.title}
                   </h3>
-                  <p className="text-slate text-sm leading-relaxed mb-4 line-clamp-2">{article.desc}</p>
+                  <p className="text-slate text-sm leading-relaxed mb-4 line-clamp-2">
+                    {article.excerpt || article.content}
+                  </p>
                 </div>
               </div>
 
@@ -153,9 +112,9 @@ export default function NewsPreview() {
               <X className="w-5 h-5" />
             </button>
 
-            <div className="h-56 md:h-64 overflow-hidden relative flex-shrink-0">
+            <div className="h-56 md:h-64 overflow-hidden relative shrink-0">
               <img
-                src={selectedArticle.image}
+                src={selectedArticle.coverImage}
                 alt={selectedArticle.title}
                 className="w-full h-full object-cover"
               />
@@ -163,7 +122,7 @@ export default function NewsPreview() {
               <div className="absolute bottom-4 left-6 right-6 text-white">
                 <div className="flex items-center gap-3 mb-2">
                   <span className="bg-gold text-navy text-[11px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider">
-                    {selectedArticle.category}
+                    Editorial
                   </span>
                   <span className="text-xs text-white/80 flex items-center gap-1">
                     <Calendar className="w-3.5 h-3.5" />
@@ -179,14 +138,20 @@ export default function NewsPreview() {
             <div className="p-6 md:p-8 overflow-y-auto space-y-4">
               <div className="flex items-center gap-2 text-xs text-slate pb-4 border-b border-border">
                 <User className="w-3.5 h-3.5 text-gold" />
-                <span>Ditulis oleh: <strong>{selectedArticle.author}</strong></span>
+                <span>
+                  Ditulis oleh: <strong>{selectedArticle.author}</strong>
+                </span>
               </div>
 
-              {selectedArticle.content.map((paragraph, idx) => (
-                <p key={idx} className="text-navy text-sm md:text-base leading-relaxed">
-                  {paragraph}
+              {selectedArticle.excerpt && (
+                <p className="text-navy font-semibold text-sm leading-relaxed italic p-3 bg-offwhite rounded-xl border border-border">
+                  "{selectedArticle.excerpt}"
                 </p>
-              ))}
+              )}
+
+              <div className="text-navy text-sm md:text-base leading-relaxed space-y-3 whitespace-pre-wrap">
+                {selectedArticle.content}
+              </div>
 
               <div className="flex flex-col sm:flex-row gap-3 justify-end pt-4 border-t border-border">
                 <button

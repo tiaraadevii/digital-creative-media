@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { CollaborationRequest, RequestStatus } from '@/types/admin';
 import { PortfolioItem } from '@/types/portfolio';
+import { ArticleItem } from '@/types/article';
 import {
   getRequests,
   updateRequestStatus,
@@ -32,9 +33,16 @@ import {
   updatePortfolioItem,
   deletePortfolioItem,
 } from '@/services/portfolioStorage';
+import {
+  getArticles,
+  addArticle,
+  updateArticle,
+  deleteArticle,
+} from '@/services/articlesStorage';
 import CollaborationRequests from './CollaborationRequests';
 import RequestDetailModal from './RequestDetailModal';
 import PortfolioManagement from './PortfolioManagement';
+import ArticlesManagement from './ArticlesManagement';
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
@@ -48,10 +56,14 @@ export default function AdminDashboard() {
   // Portfolio items state
   const [portfolioItems, setPortfolioItems] = useState<PortfolioItem[]>([]);
 
+  // Articles items state
+  const [articles, setArticles] = useState<ArticleItem[]>([]);
+
   // Load data from storage
   useEffect(() => {
     setRequests(getRequests());
     setPortfolioItems(getPortfolioItems());
+    setArticles(getArticles());
   }, []);
 
   const handleSignOut = () => {
@@ -74,6 +86,21 @@ export default function AdminDashboard() {
     setPortfolioItems(updated);
   };
 
+  const handleAddArticle = (item: Omit<ArticleItem, 'id' | 'date' | 'createdAt'>) => {
+    const updated = addArticle(item);
+    setArticles(updated);
+  };
+
+  const handleUpdateArticle = (id: string, updatedData: Partial<ArticleItem>) => {
+    const updated = updateArticle(id, updatedData);
+    setArticles(updated);
+  };
+
+  const handleDeleteArticle = (id: string) => {
+    const updated = deleteArticle(id);
+    setArticles(updated);
+  };
+
   const handleUpdateStatus = (id: string, newStatus: RequestStatus) => {
     const updated = updateRequestStatus(id, newStatus);
     setRequests(updated);
@@ -94,6 +121,7 @@ export default function AdminDashboard() {
   const totalRequests = requests.length;
   const pendingRequests = requests.filter((r) => r.status === 'Pending').length;
   const totalPortfolios = portfolioItems.length;
+  const totalArticles = articles.length;
 
   const stats = [
     {
@@ -107,12 +135,12 @@ export default function AdminDashboard() {
     },
     {
       label: 'Articles Published',
-      value: '2',
+      value: String(totalArticles),
       badge: 'Live',
       icon: FileText,
       color: 'text-navy',
       bg: 'bg-navy/5',
-      trend: '2 latest articles',
+      trend: `${totalArticles} latest articles`,
     },
     {
       label: 'Total Requests',
@@ -273,7 +301,7 @@ export default function AdminDashboard() {
                   <span>Articles</span>
                 </div>
                 <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-white/10 text-white/70">
-                  2
+                  {totalArticles}
                 </span>
               </button>
 
@@ -417,11 +445,13 @@ export default function AdminDashboard() {
                   const Icon = stat.icon;
                   const isClickable =
                     stat.label === 'Portfolio Items' ||
+                    stat.label === 'Articles Published' ||
                     stat.label === 'Total Requests' ||
                     stat.label === 'Pending Requests';
 
                   const handleClick = () => {
                     if (stat.label === 'Portfolio Items') setActiveTab('portfolio');
+                    if (stat.label === 'Articles Published') setActiveTab('articles');
                     if (stat.label === 'Total Requests' || stat.label === 'Pending Requests')
                       setActiveTab('requests');
                   };
@@ -562,33 +592,14 @@ export default function AdminDashboard() {
             />
           )}
 
-          {/* TAB: ARTICLES PLACEHOLDER */}
+          {/* TAB: ARTICLES (Articles Management - Image 1) */}
           {activeTab === 'articles' && (
-            <div className="bg-white rounded-3xl border border-border p-12 text-center shadow-sm animate-fade-in max-w-2xl mx-auto">
-              <div className="w-16 h-16 rounded-3xl bg-gold/15 text-gold-700 flex items-center justify-center mx-auto mb-4">
-                <FileText size={30} />
-              </div>
-              <h2 className="text-2xl font-bold text-navy capitalize">
-                Articles Management
-              </h2>
-              <p className="text-navy-300 text-sm mt-2 max-w-md mx-auto leading-relaxed">
-                Halaman ini sudah disiapkan dan siap menerima instruksi detail berikutnya (tambah, edit, dan hapus artikel) sesuai arahan kamu.
-              </p>
-              <div className="mt-8 flex items-center justify-center gap-3">
-                <button
-                  onClick={() => setActiveTab('dashboard')}
-                  className="px-5 py-2.5 rounded-xl bg-navy text-white text-xs font-semibold hover:bg-navy-800 transition-all cursor-pointer"
-                >
-                  Kembali ke Dashboard
-                </button>
-                <button
-                  onClick={() => setActiveTab('portfolio')}
-                  className="px-5 py-2.5 rounded-xl border border-border bg-offwhite text-navy text-xs font-semibold hover:bg-white transition-all cursor-pointer"
-                >
-                  Buka Menu Portfolio
-                </button>
-              </div>
-            </div>
+            <ArticlesManagement
+              articles={articles}
+              onAdd={handleAddArticle}
+              onUpdate={handleUpdateArticle}
+              onDelete={handleDeleteArticle}
+            />
           )}
         </main>
       </div>
