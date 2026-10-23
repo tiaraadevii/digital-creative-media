@@ -10,10 +10,19 @@ export default function NewsPreview() {
   const [selectedArticle, setSelectedArticle] = useState<ArticleItem | null>(null);
 
   useEffect(() => {
-    const all = getArticles();
-    // Only display published articles on public site
-    const published = all.filter((a) => a.status === 'Published');
-    setItems(published);
+    const sync = () => {
+      const all = getArticles();
+      // Only display published articles on public site
+      const published = all.filter((a) => a.status === 'Published');
+      setItems(published);
+    };
+    sync();
+    window.addEventListener('storage', sync);
+    window.addEventListener('dcm_articles_updated', sync);
+    return () => {
+      window.removeEventListener('storage', sync);
+      window.removeEventListener('dcm_articles_updated', sync);
+    };
   }, []);
 
   return (

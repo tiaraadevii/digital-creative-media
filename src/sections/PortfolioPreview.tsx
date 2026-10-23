@@ -10,7 +10,16 @@ export default function PortfolioPreview() {
   const [selectedProject, setSelectedProject] = useState<PortfolioItem | null>(null);
 
   useEffect(() => {
-    setItems(getPortfolioItems());
+    const sync = () => {
+      setItems(getPortfolioItems());
+    };
+    sync();
+    window.addEventListener('storage', sync);
+    window.addEventListener('dcm_portfolio_updated', sync);
+    return () => {
+      window.removeEventListener('storage', sync);
+      window.removeEventListener('dcm_portfolio_updated', sync);
+    };
   }, []);
 
   return (

@@ -71,12 +71,29 @@ export default function AdminDashboard() {
   // Partners items state
   const [partners, setPartners] = useState<PartnerEvent[]>([]);
 
-  // Load data from storage
+  // Load data from storage with real-time sync
   useEffect(() => {
-    setRequests(getRequests());
-    setPortfolioItems(getPortfolioItems());
-    setArticles(getArticles());
-    setPartners(getPartners());
+    const syncAll = () => {
+      setRequests(getRequests());
+      setPortfolioItems(getPortfolioItems());
+      setArticles(getArticles());
+      setPartners(getPartners());
+    };
+    syncAll();
+
+    window.addEventListener('storage', syncAll);
+    window.addEventListener('dcm_requests_updated', syncAll);
+    window.addEventListener('dcm_portfolio_updated', syncAll);
+    window.addEventListener('dcm_articles_updated', syncAll);
+    window.addEventListener('dcm_partners_updated', syncAll);
+
+    return () => {
+      window.removeEventListener('storage', syncAll);
+      window.removeEventListener('dcm_requests_updated', syncAll);
+      window.removeEventListener('dcm_portfolio_updated', syncAll);
+      window.removeEventListener('dcm_articles_updated', syncAll);
+      window.removeEventListener('dcm_partners_updated', syncAll);
+    };
   }, []);
 
   const handleSignOut = () => {

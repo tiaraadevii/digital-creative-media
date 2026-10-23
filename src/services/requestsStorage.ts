@@ -58,6 +58,9 @@ export function getRequests(): CollaborationRequest[] {
 export function saveRequests(requests: CollaborationRequest[]): void {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(requests));
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new Event('dcm_requests_updated'));
+    }
   } catch (e) {
     console.error('Failed to save requests to localStorage:', e);
   }

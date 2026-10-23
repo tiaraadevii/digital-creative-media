@@ -70,6 +70,9 @@ export function getPortfolioItems(): PortfolioItem[] {
 export function savePortfolioItems(items: PortfolioItem[]): void {
   try {
     localStorage.setItem(PORTFOLIO_STORAGE_KEY, JSON.stringify(items));
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new Event('dcm_portfolio_updated'));
+    }
   } catch (e) {
     console.error('Failed to save portfolio items:', e);
   }

@@ -50,6 +50,9 @@ export function getArticles(): ArticleItem[] {
 export function saveArticles(items: ArticleItem[]): void {
   try {
     localStorage.setItem(ARTICLES_STORAGE_KEY, JSON.stringify(items));
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new Event('dcm_articles_updated'));
+    }
   } catch (e) {
     console.error('Failed to save articles:', e);
   }
