@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
-import { X, Image as ImageIcon, Check } from 'lucide-react';
+import { X, Image as ImageIcon, Loader2 } from 'lucide-react';
 import { ArticleItem } from '@/types/article';
+import { compressImageFile } from '@/utils/imageCompressor';
 
 interface ArticleModalProps {
   isOpen: boolean;
@@ -23,6 +24,7 @@ export default function ArticleModal({
   const [coverImage, setCoverImage] = useState('');
   const [author, setAuthor] = useState('CV Digital Creative Media');
   const [publishImmediately, setPublishImmediately] = useState(true);
+  const [isUploading, setIsUploading] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -49,14 +51,22 @@ export default function ArticleModal({
 
   if (!isOpen) return null;
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setCoverImage(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+      setIsUploading(true);
+      try {
+        const compressed = await compressImageFile(file, 1200, 1200, 0.78);
+        setCoverImage(compressed);
+      } catch (err) {
+        console.error('Image compression failed:', err);
+        // Fallback to direct file reader
+        const reader = new FileReader();
+        reader.onloadend = () => setCoverImage(reader.result as string);
+        reader.readAsDataURL(file);
+      } finally {
+        setIsUploading(false);
+      }
     }
   };
 
@@ -162,7 +172,12 @@ export default function ArticleModal({
                 className="hidden"
               />
 
-              {coverImage ? (
+              {isUploading ? (
+                <div className="h-36 rounded-2xl border border-border bg-offwhite/50 flex flex-col items-center justify-center p-4 text-center">
+                  <Loader2 size={24} className="animate-spin text-gold mb-2" />
+                  <p className="text-xs font-semibold text-navy">Mengompres & memproses gambar...</p>
+                </div>
+              ) : coverImage ? (
                 <div className="relative rounded-2xl overflow-hidden border border-border bg-offwhite h-36 group">
                   <img
                     src={coverImage}
@@ -198,7 +213,7 @@ export default function ArticleModal({
                   <p className="text-xs font-semibold text-navy">
                     Click or drag image here to upload
                   </p>
-                  <p className="text-[10px] text-navy-300 mt-0.5">JPG, PNG, WebP</p>
+                  <p className="text-[10px] text-navy-300 mt-0.5">JPG, PNG, WebP (Auto-optimized)</p>
                 </div>
               )}
             </div>

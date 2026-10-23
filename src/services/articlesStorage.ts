@@ -68,7 +68,25 @@ export function getArticles(): ArticleItem[] {
       return INITIAL_ARTICLES;
     }
     const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) && parsed.length > 0 ? parsed : INITIAL_ARTICLES;
+    if (!Array.isArray(parsed) || parsed.length === 0) {
+      return INITIAL_ARTICLES;
+    }
+    return parsed
+      .filter((a): a is ArticleItem => Boolean(a && typeof a === 'object' && a.id))
+      .map((a) => ({
+        id: String(a.id),
+        title: String(a.title || 'Untitled Article'),
+        excerpt: String(a.excerpt || ''),
+        content: String(a.content || ''),
+        coverImage: String(
+          a.coverImage ||
+            'https://images.unsplash.com/photo-1542744094-3a31f272c490?auto=format&fit=crop&w=800&q=80'
+        ),
+        author: String(a.author || 'CV Digital Creative Media'),
+        status: a.status === 'Draft' ? 'Draft' : 'Published',
+        date: String(a.date || ''),
+        createdAt: a.createdAt || new Date().toISOString(),
+      }));
   } catch {
     return INITIAL_ARTICLES;
   }

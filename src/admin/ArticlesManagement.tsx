@@ -42,15 +42,17 @@ export default function ArticlesManagement({
 
   // Filtered articles
   const filteredArticles = useMemo(() => {
-    return articles.filter((art) => {
+    const list = Array.isArray(articles) ? articles : [];
+    return list.filter((art) => {
+      if (!art) return false;
       const matchStatus = statusFilter === 'All' || art.status === statusFilter;
       const q = searchQuery.toLowerCase().trim();
       const matchSearch =
         !q ||
-        art.title.toLowerCase().includes(q) ||
-        art.author.toLowerCase().includes(q) ||
-        art.excerpt.toLowerCase().includes(q) ||
-        art.content.toLowerCase().includes(q);
+        (art.title || '').toLowerCase().includes(q) ||
+        (art.author || '').toLowerCase().includes(q) ||
+        (art.excerpt || '').toLowerCase().includes(q) ||
+        (art.content || '').toLowerCase().includes(q);
       return matchStatus && matchSearch;
     });
   }, [articles, statusFilter, searchQuery]);

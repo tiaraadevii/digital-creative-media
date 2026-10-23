@@ -49,15 +49,17 @@ export default function PortfolioManagement({
 
   // Filtered items
   const filteredItems = useMemo(() => {
-    return items.filter((item) => {
+    const list = Array.isArray(items) ? items : [];
+    return list.filter((item) => {
+      if (!item) return false;
       const matchCat = selectedCategory === 'All' || item.category === selectedCategory;
       const q = searchQuery.toLowerCase().trim();
       const matchSearch =
         !q ||
-        item.title.toLowerCase().includes(q) ||
-        item.client.toLowerCase().includes(q) ||
-        item.description.toLowerCase().includes(q) ||
-        item.category.toLowerCase().includes(q);
+        (item.title || '').toLowerCase().includes(q) ||
+        (item.client || '').toLowerCase().includes(q) ||
+        (item.description || '').toLowerCase().includes(q) ||
+        (item.category || '').toLowerCase().includes(q);
       return matchCat && matchSearch;
     });
   }, [items, selectedCategory, searchQuery]);

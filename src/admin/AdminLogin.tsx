@@ -31,6 +31,7 @@ export default function AdminLogin() {
     setTimeout(() => {
       if (email.trim().toLowerCase() === ADMIN_EMAIL.toLowerCase() && password === ADMIN_PASSWORD) {
         sessionStorage.setItem('dcm_admin', 'authenticated');
+        localStorage.setItem('dcm_admin', 'authenticated');
         navigate('/admin/dashboard');
       } else {
         setError('Email atau password tidak sesuai. Silakan periksa kembali.');

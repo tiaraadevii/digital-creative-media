@@ -78,7 +78,23 @@ export function getRequests(): CollaborationRequest[] {
       return INITIAL_REQUESTS;
     }
     const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) && parsed.length > 0 ? parsed : INITIAL_REQUESTS;
+    if (!Array.isArray(parsed) || parsed.length === 0) {
+      return INITIAL_REQUESTS;
+    }
+    return parsed
+      .filter((r): r is CollaborationRequest => Boolean(r && typeof r === 'object' && r.id))
+      .map((r) => ({
+        id: String(r.id),
+        name: String(r.name || 'Calon Partner'),
+        email: String(r.email || ''),
+        phone: String(r.phone || ''),
+        company: String(r.company || ''),
+        projectType: String(r.projectType || 'General Collaboration'),
+        message: String(r.message || ''),
+        status: (r.status as RequestStatus) || 'Pending',
+        date: String(r.date || ''),
+        createdAt: r.createdAt || new Date().toISOString(),
+      }));
   } catch {
     return INITIAL_REQUESTS;
   }

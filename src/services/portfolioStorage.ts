@@ -75,7 +75,24 @@ export function getPortfolioItems(): PortfolioItem[] {
       return INITIAL_PORTFOLIO;
     }
     const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) && parsed.length > 0 ? parsed : INITIAL_PORTFOLIO;
+    if (!Array.isArray(parsed) || parsed.length === 0) {
+      return INITIAL_PORTFOLIO;
+    }
+    return parsed
+      .filter((p): p is PortfolioItem => Boolean(p && typeof p === 'object' && p.id))
+      .map((p) => ({
+        id: String(p.id),
+        title: String(p.title || 'Untitled Project'),
+        category: String(p.category || 'General'),
+        client: String(p.client || ''),
+        description: String(p.description || ''),
+        image: String(
+          p.image ||
+            'https://images.unsplash.com/photo-1542744094-3a31f272c490?auto=format&fit=crop&w=800&q=80'
+        ),
+        projectUrl: String(p.projectUrl || ''),
+        sortOrder: typeof p.sortOrder === 'number' ? p.sortOrder : 1,
+      }));
   } catch {
     return INITIAL_PORTFOLIO;
   }

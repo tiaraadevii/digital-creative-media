@@ -11,6 +11,7 @@ import PropertyPreview from '@/sections/PropertyPreview';
 import PartnershipCTA from '@/sections/PartnershipCTA';
 import Contact from '@/sections/Contact';
 import FloatingWhatsApp from '@/components/FloatingWhatsApp';
+import ErrorBoundary from '@/components/ErrorBoundary';
 
 import AdminLogin from '@/admin/AdminLogin';
 import AdminDashboard from '@/admin/AdminDashboard';
@@ -39,26 +40,37 @@ function LandingPage() {
 
 export default function App() {
   return (
-    <BrowserRouter>
-      <Routes>
-        {/* Main Website */}
-        <Route path="/" element={<LandingPage />} />
+    <ErrorBoundary>
+      <BrowserRouter>
+        <Routes>
+          {/* Main Website */}
+          <Route path="/" element={<LandingPage />} />
 
-        {/* Admin Routes */}
-        <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
-        <Route path="/admin/login" element={<AdminLogin />} />
-        <Route
-          path="/admin/dashboard"
-          element={
-            <AdminGuard>
-              <AdminDashboard />
-            </AdminGuard>
-          }
-        />
+          {/* Admin Routes */}
+          <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
+          <Route
+            path="/admin/login"
+            element={
+              <ErrorBoundary fallbackTitle="Kendala Memuat Halaman Login">
+                <AdminLogin />
+              </ErrorBoundary>
+            }
+          />
+          <Route
+            path="/admin/dashboard"
+            element={
+              <ErrorBoundary fallbackTitle="Kendala Memuat Dashboard Admin">
+                <AdminGuard>
+                  <AdminDashboard />
+                </AdminGuard>
+              </ErrorBoundary>
+            }
+          />
 
-        {/* Fallback */}
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-    </BrowserRouter>
+          {/* Fallback */}
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </BrowserRouter>
+    </ErrorBoundary>
   );
 }

@@ -741,18 +741,18 @@ export const INITIAL_PARTNERS: PartnerEvent[] = [
 function rowToPartner(row: any): PartnerEvent {
   return {
     id: row.id,
-    name: row.name,
-    officialTitle: row.official_title,
-    category: row.category as PartnerCategory,
-    categoryLabel: row.category_label,
-    collabType: row.collab_type,
-    dateOrYear: row.date_or_year,
-    location: row.location,
-    venue: row.venue,
-    tagline: row.tagline,
-    desc: row.desc_text,
+    name: row.name || '',
+    officialTitle: row.official_title || '',
+    category: (row.category as PartnerCategory) || 'sport',
+    categoryLabel: row.category_label || '',
+    collabType: row.collab_type || '',
+    dateOrYear: row.date_or_year || '',
+    location: row.location || '',
+    venue: row.venue || '',
+    tagline: row.tagline || '',
+    desc: row.desc_text || '',
     highlights: Array.isArray(row.highlights) ? row.highlights : [],
-    impactBadge: row.impact_badge,
+    impactBadge: row.impact_badge || '',
     logoUrl: row.logo_url || undefined,
     posterUrl: row.poster_url || undefined,
     logoBg: row.logo_bg || undefined,
@@ -827,7 +827,32 @@ export function getPartners(): PartnerEvent[] {
       return INITIAL_PARTNERS;
     }
     const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) && parsed.length > 0 ? parsed : INITIAL_PARTNERS;
+    if (!Array.isArray(parsed) || parsed.length === 0) {
+      return INITIAL_PARTNERS;
+    }
+    return parsed
+      .filter((p): p is PartnerEvent => Boolean(p && typeof p === 'object' && p.id))
+      .map((p) => ({
+        id: String(p.id),
+        name: String(p.name || 'Event Partner'),
+        officialTitle: String(p.officialTitle || p.name || ''),
+        category: (p.category as PartnerCategory) || 'sport',
+        categoryLabel: String(p.categoryLabel || 'Event Partnership'),
+        collabType: String(p.collabType || 'Official Media Partner'),
+        dateOrYear: String(p.dateOrYear || ''),
+        location: String(p.location || 'Kota Malang'),
+        venue: String(p.venue || ''),
+        tagline: String(p.tagline || ''),
+        desc: String(p.desc || ''),
+        highlights: Array.isArray(p.highlights) ? p.highlights : [],
+        impactBadge: String(p.impactBadge || 'Official Partner'),
+        logoUrl: p.logoUrl || undefined,
+        posterUrl: p.posterUrl || undefined,
+        logoBg: p.logoBg || undefined,
+        accentGradient: p.accentGradient || undefined,
+        badgeColor: p.badgeColor || undefined,
+        createdAt: p.createdAt || new Date().toISOString(),
+      }));
   } catch {
     return INITIAL_PARTNERS;
   }

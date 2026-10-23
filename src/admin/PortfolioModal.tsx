@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
-import { X, Upload, Image as ImageIcon, Link as LinkIcon, Trash2 } from 'lucide-react';
+import { X, Upload, Image as ImageIcon, Link as LinkIcon, Trash2, Loader2 } from 'lucide-react';
 import { PortfolioItem } from '@/types/portfolio';
+import { compressImageFile } from '@/utils/imageCompressor';
 
 interface PortfolioModalProps {
   isOpen: boolean;
@@ -36,6 +37,7 @@ export default function PortfolioModal({
   const [image, setImage] = useState('');
   const [projectUrl, setProjectUrl] = useState('');
   const [sortOrder, setSortOrder] = useState<number>(1);
+  const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -63,14 +65,21 @@ export default function PortfolioModal({
 
   if (!isOpen) return null;
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImage(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+      setIsUploading(true);
+      try {
+        const compressed = await compressImageFile(file, 1200, 1200, 0.78);
+        setImage(compressed);
+      } catch (err) {
+        console.error('Portfolio image compression error:', err);
+        const reader = new FileReader();
+        reader.onloadend = () => setImage(reader.result as string);
+        reader.readAsDataURL(file);
+      } finally {
+        setIsUploading(false);
+      }
     }
   };
 
@@ -183,7 +192,12 @@ export default function PortfolioModal({
                 className="hidden"
               />
 
-              {image ? (
+              {isUploading ? (
+                <div className="h-36 rounded-2xl border border-border bg-offwhite/50 flex flex-col items-center justify-center p-4 text-center">
+                  <Loader2 size={24} className="animate-spin text-gold mb-2" />
+                  <p className="text-xs font-semibold text-navy">Mengompres gambar...</p>
+                </div>
+              ) : image ? (
                 <div className="relative rounded-2xl overflow-hidden border border-border bg-offwhite h-36 group">
                   <img
                     src={image}
@@ -219,7 +233,7 @@ export default function PortfolioModal({
                   <p className="text-xs font-semibold text-navy">
                     Click or drag image here to upload
                   </p>
-                  <p className="text-[10px] text-navy-300 mt-0.5">JPG, PNG, WebP</p>
+                  <p className="text-[10px] text-navy-300 mt-0.5">JPG, PNG, WebP (Auto-optimized)</p>
                 </div>
               )}
             </div>

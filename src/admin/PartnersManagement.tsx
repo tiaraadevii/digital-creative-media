@@ -46,7 +46,9 @@ export default function PartnersManagement({
 
   // Filtered list
   const filteredPartners = useMemo(() => {
-    return partners.filter((p) => {
+    const list = Array.isArray(partners) ? partners : [];
+    return list.filter((p) => {
+      if (!p) return false;
       const matchCat =
         selectedCategory === 'all'
           ? true
@@ -57,12 +59,12 @@ export default function PartnersManagement({
       const q = searchQuery.toLowerCase().trim();
       const matchSearch =
         !q ||
-        p.name.toLowerCase().includes(q) ||
-        p.officialTitle.toLowerCase().includes(q) ||
-        p.collabType.toLowerCase().includes(q) ||
-        p.location.toLowerCase().includes(q) ||
-        p.venue.toLowerCase().includes(q) ||
-        p.tagline.toLowerCase().includes(q);
+        (p.name || '').toLowerCase().includes(q) ||
+        (p.officialTitle || '').toLowerCase().includes(q) ||
+        (p.collabType || '').toLowerCase().includes(q) ||
+        (p.location || '').toLowerCase().includes(q) ||
+        (p.venue || '').toLowerCase().includes(q) ||
+        (p.tagline || '').toLowerCase().includes(q);
 
       return matchCat && matchSearch;
     });

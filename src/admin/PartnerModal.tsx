@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { X, Image as ImageIcon, Upload, Sparkles } from 'lucide-react';
 import { PartnerEvent, PartnerCategory } from '@/types/partner';
+import { compressImageFile } from '@/utils/imageCompressor';
 
 interface PartnerModalProps {
   isOpen: boolean;
@@ -79,17 +80,23 @@ export default function PartnerModal({
 
   if (!isOpen) return null;
 
-  const handleFileUpload = (
+  const handleFileUpload = async (
     e: React.ChangeEvent<HTMLInputElement>,
     setter: (val: string) => void
   ) => {
     const file = e.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setter(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+      try {
+        const compressed = await compressImageFile(file, 900, 900, 0.78);
+        setter(compressed);
+      } catch (err) {
+        console.error('Partner image compression error:', err);
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setter(reader.result as string);
+        };
+        reader.readAsDataURL(file);
+      }
     }
   };
 

@@ -29,39 +29,36 @@ export default function CollaborationRequests({
 
   // Counts for tabs
   const counts = useMemo(() => {
+    const list = Array.isArray(requests) ? requests : [];
     return {
-      All: requests.length,
-      Pending: requests.filter((r) => r.status === 'Pending').length,
-      Read: requests.filter((r) => r.status === 'Read').length,
-      Responded: requests.filter((r) => r.status === 'Responded').length,
+      All: list.length,
+      Pending: list.filter((r) => r && r.status === 'Pending').length,
+      Read: list.filter((r) => r && r.status === 'Read').length,
+      Responded: list.filter((r) => r && r.status === 'Responded').length,
     };
   }, [requests]);
 
   // Filtered requests
   const filteredRequests = useMemo(() => {
-    return requests.filter((req) => {
+    const list = Array.isArray(requests) ? requests : [];
+    return list.filter((req) => {
+      if (!req) return false;
       const matchFilter = filter === 'All' ? true : req.status === filter;
       const q = searchQuery.toLowerCase().trim();
       const matchSearch =
         !q ||
-        req.name.toLowerCase().includes(q) ||
-        req.email.toLowerCase().includes(q) ||
-        req.company.toLowerCase().includes(q) ||
-        req.projectType.toLowerCase().includes(q) ||
-        req.message.toLowerCase().includes(q);
+        (req.name || '').toLowerCase().includes(q) ||
+        (req.email || '').toLowerCase().includes(q) ||
+        (req.company || '').toLowerCase().includes(q) ||
+        (req.projectType || '').toLowerCase().includes(q) ||
+        (req.message || '').toLowerCase().includes(q);
 
       return matchFilter && matchSearch;
     });
   }, [requests, filter, searchQuery]);
 
-  const getStatusBadge = (status: RequestStatus) => {
+  const getStatusBadge = (status?: RequestStatus | string) => {
     switch (status) {
-      case 'Pending':
-        return {
-          bg: 'bg-amber-50 text-amber-700 border-amber-200',
-          icon: Clock,
-          label: 'Pending',
-        };
       case 'Read':
         return {
           bg: 'bg-blue-50 text-blue-700 border-blue-200',
@@ -73,6 +70,13 @@ export default function CollaborationRequests({
           bg: 'bg-emerald-50 text-emerald-700 border-emerald-200',
           icon: CheckCircle2,
           label: 'Responded',
+        };
+      case 'Pending':
+      default:
+        return {
+          bg: 'bg-amber-50 text-amber-700 border-amber-200',
+          icon: Clock,
+          label: status || 'Pending',
         };
     }
   };
@@ -167,12 +171,14 @@ export default function CollaborationRequests({
           {filteredRequests.map((req) => {
             const badge = getStatusBadge(req.status);
             const BadgeIcon = badge.icon;
-            const initials = req.name
-              .split(' ')
+            const initials = (req.name || 'CP')
+              .trim()
+              .split(/\s+/)
+              .filter(Boolean)
               .map((w) => w[0])
               .slice(0, 2)
               .join('')
-              .toUpperCase();
+              .toUpperCase() || 'CP';
 
             return (
               <div
