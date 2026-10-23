@@ -4,18 +4,6 @@ const PORTFOLIO_STORAGE_KEY = 'dcm_portfolio_items';
 
 export const INITIAL_PORTFOLIO: PortfolioItem[] = [
   {
-    id: 'port-1',
-    title: 'DEVIIIII KEREN BETULL',
-    category: 'Branding',
-    client: 'Maju Group',
-    description:
-      'Transformasi identitas visual menyeluruh untuk salah satu konglomerasi terkemuka di Indonesia.',
-    image:
-      'https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&w=800&q=80',
-    projectUrl: 'https://cvdigitalcreative.media/portfolio/devii-keren',
-    sortOrder: 1,
-  },
-  {
     id: 'port-2',
     title: 'E-Commerce Platform Nusantara',
     category: 'Web Development',
