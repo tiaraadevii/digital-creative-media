@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { ArrowRight, ArrowUpRight, X, Sparkles, CheckCircle2, MessageSquare, ExternalLink } from 'lucide-react';
 import { useReveal } from '@/hooks/useReveal';
-import { getPortfolioItems } from '@/services/portfolioStorage';
+import { getPortfolioItems, syncPortfolioFromCloud } from '@/services/portfolioStorage';
 import { PortfolioItem } from '@/types/portfolio';
 
 export default function PortfolioPreview() {
@@ -14,6 +14,8 @@ export default function PortfolioPreview() {
       setItems(getPortfolioItems());
     };
     sync();
+    syncPortfolioFromCloud();
+
     window.addEventListener('storage', sync);
     window.addEventListener('dcm_portfolio_updated', sync);
     return () => {

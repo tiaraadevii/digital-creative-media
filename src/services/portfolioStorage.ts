@@ -45,11 +45,11 @@ export const INITIAL_PORTFOLIO: PortfolioItem[] = [
 function rowToItem(row: any): PortfolioItem {
   return {
     id: row.id,
-    title: row.title,
-    category: row.category,
-    client: row.client,
-    description: row.description,
-    image: row.image,
+    title: row.title || '',
+    category: row.category || '',
+    client: row.client || '',
+    description: row.description || '',
+    image: row.image || '',
     projectUrl: row.project_url || '',
     sortOrder: row.sort_order || 0,
   };
@@ -58,20 +58,33 @@ function rowToItem(row: any): PortfolioItem {
 function itemToRow(item: PortfolioItem) {
   return {
     id: item.id,
-    title: item.title,
-    category: item.category,
-    client: item.client,
-    description: item.description,
-    image: item.image,
+    title: item.title || '',
+    category: item.category || '',
+    client: item.client || '',
+    description: item.description || '',
+    image: item.image || '',
     project_url: item.projectUrl || '',
     sort_order: item.sortOrder || 0,
   };
 }
 
-let isSyncing = false;
+export function getPortfolioItems(): PortfolioItem[] {
+  try {
+    const raw = localStorage.getItem(PORTFOLIO_STORAGE_KEY);
+    if (!raw) {
+      return INITIAL_PORTFOLIO;
+    }
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) && parsed.length > 0 ? parsed : INITIAL_PORTFOLIO;
+  } catch {
+    return INITIAL_PORTFOLIO;
+  }
+}
+
+let isSyncingPortfolio = false;
 export async function syncPortfolioFromCloud(): Promise<PortfolioItem[]> {
-  if (isSyncing) return getPortfolioItems();
-  isSyncing = true;
+  if (isSyncingPortfolio) return getPortfolioItems();
+  isSyncingPortfolio = true;
   try {
     const { data, error } = await supabase
       .from('portfolio_items')
@@ -85,36 +98,22 @@ export async function syncPortfolioFromCloud(): Promise<PortfolioItem[]> {
 
     if (Array.isArray(data)) {
       const items = data.map(rowToItem);
-      localStorage.setItem(PORTFOLIO_STORAGE_KEY, JSON.stringify(items));
-      if (typeof window !== 'undefined') {
-        window.dispatchEvent(new Event('dcm_portfolio_updated'));
+      const currentRaw = localStorage.getItem(PORTFOLIO_STORAGE_KEY);
+      const newRaw = JSON.stringify(items);
+      if (currentRaw !== newRaw) {
+        localStorage.setItem(PORTFOLIO_STORAGE_KEY, newRaw);
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new Event('dcm_portfolio_updated'));
+        }
       }
       return items;
     }
   } catch (err) {
     console.error('Error syncing portfolio:', err);
   } finally {
-    isSyncing = false;
+    isSyncingPortfolio = false;
   }
   return getPortfolioItems();
-}
-
-export function getPortfolioItems(): PortfolioItem[] {
-  // Trigger background cloud sync on client
-  if (typeof window !== 'undefined') {
-    syncPortfolioFromCloud();
-  }
-
-  try {
-    const raw = localStorage.getItem(PORTFOLIO_STORAGE_KEY);
-    if (!raw) {
-      return INITIAL_PORTFOLIO;
-    }
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) && parsed.length > 0 ? parsed : INITIAL_PORTFOLIO;
-  } catch {
-    return INITIAL_PORTFOLIO;
-  }
 }
 
 export function savePortfolioItems(items: PortfolioItem[]): void {

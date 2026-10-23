@@ -802,9 +802,13 @@ export async function syncPartnersFromCloud(): Promise<PartnerEvent[]> {
 
     if (Array.isArray(data) && data.length > 0) {
       const items = data.map(rowToPartner);
-      localStorage.setItem(PARTNERS_STORAGE_KEY, JSON.stringify(items));
-      if (typeof window !== 'undefined') {
-        window.dispatchEvent(new Event('dcm_partners_updated'));
+      const currentRaw = localStorage.getItem(PARTNERS_STORAGE_KEY);
+      const newRaw = JSON.stringify(items);
+      if (currentRaw !== newRaw) {
+        localStorage.setItem(PARTNERS_STORAGE_KEY, newRaw);
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new Event('dcm_partners_updated'));
+        }
       }
       return items;
     }
@@ -817,10 +821,6 @@ export async function syncPartnersFromCloud(): Promise<PartnerEvent[]> {
 }
 
 export function getPartners(): PartnerEvent[] {
-  if (typeof window !== 'undefined') {
-    syncPartnersFromCloud();
-  }
-
   try {
     const raw = localStorage.getItem(PARTNERS_STORAGE_KEY);
     if (!raw) {

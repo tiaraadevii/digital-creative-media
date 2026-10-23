@@ -37,13 +37,13 @@ export const INITIAL_ARTICLES: ArticleItem[] = [
 function rowToArticle(row: any): ArticleItem {
   return {
     id: row.id,
-    title: row.title,
-    excerpt: row.excerpt,
-    content: row.content,
-    coverImage: row.cover_image,
-    author: row.author,
-    status: row.status as 'Published' | 'Draft',
-    date: row.date,
+    title: row.title || '',
+    excerpt: row.excerpt || '',
+    content: row.content || '',
+    coverImage: row.cover_image || '',
+    author: row.author || '',
+    status: (row.status as 'Published' | 'Draft') || 'Published',
+    date: row.date || '',
     createdAt: row.created_at,
   };
 }
@@ -51,20 +51,33 @@ function rowToArticle(row: any): ArticleItem {
 function articleToRow(article: ArticleItem) {
   return {
     id: article.id,
-    title: article.title,
-    excerpt: article.excerpt,
-    content: article.content,
-    cover_image: article.coverImage,
-    author: article.author,
-    status: article.status,
-    date: article.date,
+    title: article.title || '',
+    excerpt: article.excerpt || '',
+    content: article.content || '',
+    cover_image: article.coverImage || '',
+    author: article.author || '',
+    status: article.status || 'Published',
+    date: article.date || '',
   };
 }
 
-let isSyncing = false;
+export function getArticles(): ArticleItem[] {
+  try {
+    const raw = localStorage.getItem(ARTICLES_STORAGE_KEY);
+    if (!raw) {
+      return INITIAL_ARTICLES;
+    }
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) && parsed.length > 0 ? parsed : INITIAL_ARTICLES;
+  } catch {
+    return INITIAL_ARTICLES;
+  }
+}
+
+let isSyncingArticles = false;
 export async function syncArticlesFromCloud(): Promise<ArticleItem[]> {
-  if (isSyncing) return getArticles();
-  isSyncing = true;
+  if (isSyncingArticles) return getArticles();
+  isSyncingArticles = true;
   try {
     const { data, error } = await supabase
       .from('articles')
@@ -78,35 +91,22 @@ export async function syncArticlesFromCloud(): Promise<ArticleItem[]> {
 
     if (Array.isArray(data)) {
       const items = data.map(rowToArticle);
-      localStorage.setItem(ARTICLES_STORAGE_KEY, JSON.stringify(items));
-      if (typeof window !== 'undefined') {
-        window.dispatchEvent(new Event('dcm_articles_updated'));
+      const currentRaw = localStorage.getItem(ARTICLES_STORAGE_KEY);
+      const newRaw = JSON.stringify(items);
+      if (currentRaw !== newRaw) {
+        localStorage.setItem(ARTICLES_STORAGE_KEY, newRaw);
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new Event('dcm_articles_updated'));
+        }
       }
       return items;
     }
   } catch (err) {
     console.error('Error syncing articles:', err);
   } finally {
-    isSyncing = false;
+    isSyncingArticles = false;
   }
   return getArticles();
-}
-
-export function getArticles(): ArticleItem[] {
-  if (typeof window !== 'undefined') {
-    syncArticlesFromCloud();
-  }
-
-  try {
-    const raw = localStorage.getItem(ARTICLES_STORAGE_KEY);
-    if (!raw) {
-      return INITIAL_ARTICLES;
-    }
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) && parsed.length > 0 ? parsed : INITIAL_ARTICLES;
-  } catch {
-    return INITIAL_ARTICLES;
-  }
 }
 
 export function saveArticles(items: ArticleItem[]): void {
@@ -146,7 +146,9 @@ export function addArticle(
     .from('articles')
     .insert([articleToRow(newArticle)])
     .then(({ error }) => {
-      if (error) console.error('Supabase add article error:', error);
+      if (error) {
+        console.error('Supabase add article error:', error);
+      }
     });
 
   return updated;

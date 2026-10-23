@@ -45,13 +45,13 @@ export const INITIAL_REQUESTS: CollaborationRequest[] = [
 function rowToRequest(row: any): CollaborationRequest {
   return {
     id: row.id,
-    name: row.name,
+    name: row.name || '',
     email: row.email || '',
     phone: row.phone || '',
     company: row.company || '',
-    projectType: row.project_type,
-    message: row.message,
-    status: row.status as RequestStatus,
+    projectType: row.project_type || 'General',
+    message: row.message || '',
+    status: (row.status as RequestStatus) || 'Pending',
     date: row.date || '',
     createdAt: row.created_at,
   };
@@ -60,21 +60,34 @@ function rowToRequest(row: any): CollaborationRequest {
 function requestToRow(req: CollaborationRequest) {
   return {
     id: req.id,
-    name: req.name,
+    name: req.name || '',
     email: req.email || '',
     phone: req.phone || '',
     company: req.company || '',
-    project_type: req.projectType,
-    message: req.message,
-    status: req.status,
+    project_type: req.projectType || 'General',
+    message: req.message || '',
+    status: req.status || 'Pending',
     date: req.date || '',
   };
 }
 
-let isSyncing = false;
+export function getRequests(): CollaborationRequest[] {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) {
+      return INITIAL_REQUESTS;
+    }
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) && parsed.length > 0 ? parsed : INITIAL_REQUESTS;
+  } catch {
+    return INITIAL_REQUESTS;
+  }
+}
+
+let isSyncingRequests = false;
 export async function syncRequestsFromCloud(): Promise<CollaborationRequest[]> {
-  if (isSyncing) return getRequests();
-  isSyncing = true;
+  if (isSyncingRequests) return getRequests();
+  isSyncingRequests = true;
   try {
     const { data, error } = await supabase
       .from('collaboration_requests')
@@ -88,35 +101,22 @@ export async function syncRequestsFromCloud(): Promise<CollaborationRequest[]> {
 
     if (Array.isArray(data)) {
       const items = data.map(rowToRequest);
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
-      if (typeof window !== 'undefined') {
-        window.dispatchEvent(new Event('dcm_requests_updated'));
+      const currentRaw = localStorage.getItem(STORAGE_KEY);
+      const newRaw = JSON.stringify(items);
+      if (currentRaw !== newRaw) {
+        localStorage.setItem(STORAGE_KEY, newRaw);
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new Event('dcm_requests_updated'));
+        }
       }
       return items;
     }
   } catch (err) {
     console.error('Error syncing requests:', err);
   } finally {
-    isSyncing = false;
+    isSyncingRequests = false;
   }
   return getRequests();
-}
-
-export function getRequests(): CollaborationRequest[] {
-  if (typeof window !== 'undefined') {
-    syncRequestsFromCloud();
-  }
-
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) {
-      return INITIAL_REQUESTS;
-    }
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) && parsed.length > 0 ? parsed : INITIAL_REQUESTS;
-  } catch {
-    return INITIAL_REQUESTS;
-  }
 }
 
 export function saveRequests(requests: CollaborationRequest[]): void {

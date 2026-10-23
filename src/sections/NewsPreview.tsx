@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { ArrowRight, Calendar, X, User } from 'lucide-react';
 import { useReveal } from '@/hooks/useReveal';
-import { getArticles } from '@/services/articlesStorage';
+import { getArticles, syncArticlesFromCloud } from '@/services/articlesStorage';
 import { ArticleItem } from '@/types/article';
 
 export default function NewsPreview() {
@@ -10,18 +10,21 @@ export default function NewsPreview() {
   const [selectedArticle, setSelectedArticle] = useState<ArticleItem | null>(null);
 
   useEffect(() => {
-    const sync = () => {
+    const renderPublished = () => {
       const all = getArticles();
       // Only display published articles on public site
       const published = all.filter((a) => a.status === 'Published');
       setItems(published);
     };
-    sync();
-    window.addEventListener('storage', sync);
-    window.addEventListener('dcm_articles_updated', sync);
+
+    renderPublished();
+    syncArticlesFromCloud();
+
+    window.addEventListener('storage', renderPublished);
+    window.addEventListener('dcm_articles_updated', renderPublished);
     return () => {
-      window.removeEventListener('storage', sync);
-      window.removeEventListener('dcm_articles_updated', sync);
+      window.removeEventListener('storage', renderPublished);
+      window.removeEventListener('dcm_articles_updated', renderPublished);
     };
   }, []);
 

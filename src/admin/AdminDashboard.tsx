@@ -28,24 +28,28 @@ import {
   getRequests,
   updateRequestStatus,
   deleteRequest,
+  syncRequestsFromCloud,
 } from '@/services/requestsStorage';
 import {
   getPortfolioItems,
   addPortfolioItem,
   updatePortfolioItem,
   deletePortfolioItem,
+  syncPortfolioFromCloud,
 } from '@/services/portfolioStorage';
 import {
   getArticles,
   addArticle,
   updateArticle,
   deleteArticle,
+  syncArticlesFromCloud,
 } from '@/services/articlesStorage';
 import {
   getPartners,
   addPartner,
   updatePartner,
   deletePartner,
+  syncPartnersFromCloud,
 } from '@/services/partnersStorage';
 import CollaborationRequests from './CollaborationRequests';
 import RequestDetailModal from './RequestDetailModal';
@@ -71,28 +75,44 @@ export default function AdminDashboard() {
   // Partners items state
   const [partners, setPartners] = useState<PartnerEvent[]>([]);
 
-  // Load data from storage with real-time sync
+  // Load data from storage with real-time cloud sync
   useEffect(() => {
-    const syncAll = () => {
+    // 1. Initial cached values
+    setRequests(getRequests());
+    setPortfolioItems(getPortfolioItems());
+    setArticles(getArticles());
+    setPartners(getPartners());
+
+    // 2. Fetch fresh data from cloud once on mount
+    syncRequestsFromCloud();
+    syncPortfolioFromCloud();
+    syncArticlesFromCloud();
+    syncPartnersFromCloud();
+
+    // 3. Isolated event listeners (no cascading loops)
+    const onReqUpdate = () => setRequests(getRequests());
+    const onPortUpdate = () => setPortfolioItems(getPortfolioItems());
+    const onArtUpdate = () => setArticles(getArticles());
+    const onPartUpdate = () => setPartners(getPartners());
+    const onStorage = () => {
       setRequests(getRequests());
       setPortfolioItems(getPortfolioItems());
       setArticles(getArticles());
       setPartners(getPartners());
     };
-    syncAll();
 
-    window.addEventListener('storage', syncAll);
-    window.addEventListener('dcm_requests_updated', syncAll);
-    window.addEventListener('dcm_portfolio_updated', syncAll);
-    window.addEventListener('dcm_articles_updated', syncAll);
-    window.addEventListener('dcm_partners_updated', syncAll);
+    window.addEventListener('dcm_requests_updated', onReqUpdate);
+    window.addEventListener('dcm_portfolio_updated', onPortUpdate);
+    window.addEventListener('dcm_articles_updated', onArtUpdate);
+    window.addEventListener('dcm_partners_updated', onPartUpdate);
+    window.addEventListener('storage', onStorage);
 
     return () => {
-      window.removeEventListener('storage', syncAll);
-      window.removeEventListener('dcm_requests_updated', syncAll);
-      window.removeEventListener('dcm_portfolio_updated', syncAll);
-      window.removeEventListener('dcm_articles_updated', syncAll);
-      window.removeEventListener('dcm_partners_updated', syncAll);
+      window.removeEventListener('dcm_requests_updated', onReqUpdate);
+      window.removeEventListener('dcm_portfolio_updated', onPortUpdate);
+      window.removeEventListener('dcm_articles_updated', onArtUpdate);
+      window.removeEventListener('dcm_partners_updated', onPartUpdate);
+      window.removeEventListener('storage', onStorage);
     };
   }, []);
 

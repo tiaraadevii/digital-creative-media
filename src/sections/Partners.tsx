@@ -22,7 +22,7 @@ import {
 import { useReveal } from '@/hooks/useReveal';
 
 import { PartnerEvent } from '@/types/partner';
-import { getPartners, INITIAL_PARTNERS } from '@/services/partnersStorage';
+import { getPartners, syncPartnersFromCloud, INITIAL_PARTNERS } from '@/services/partnersStorage';
 
 export type { PartnerEvent };
 
@@ -73,6 +73,8 @@ export default function Partners() {
       setEventPartners(getPartners());
     };
     sync();
+    syncPartnersFromCloud();
+
     window.addEventListener('storage', sync);
     window.addEventListener('dcm_partners_updated', sync);
     return () => {
