@@ -20,13 +20,21 @@ import {
   Search,
 } from 'lucide-react';
 import { CollaborationRequest, RequestStatus } from '@/types/admin';
+import { PortfolioItem } from '@/types/portfolio';
 import {
   getRequests,
   updateRequestStatus,
   deleteRequest,
 } from '@/services/requestsStorage';
+import {
+  getPortfolioItems,
+  addPortfolioItem,
+  updatePortfolioItem,
+  deletePortfolioItem,
+} from '@/services/portfolioStorage';
 import CollaborationRequests from './CollaborationRequests';
 import RequestDetailModal from './RequestDetailModal';
+import PortfolioManagement from './PortfolioManagement';
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
@@ -37,14 +45,33 @@ export default function AdminDashboard() {
   const [requests, setRequests] = useState<CollaborationRequest[]>([]);
   const [selectedRequest, setSelectedRequest] = useState<CollaborationRequest | null>(null);
 
-  // Load requests from storage
+  // Portfolio items state
+  const [portfolioItems, setPortfolioItems] = useState<PortfolioItem[]>([]);
+
+  // Load data from storage
   useEffect(() => {
     setRequests(getRequests());
+    setPortfolioItems(getPortfolioItems());
   }, []);
 
   const handleSignOut = () => {
     sessionStorage.removeItem('dcm_admin');
     navigate('/admin/login');
+  };
+
+  const handleAddPortfolio = (item: Omit<PortfolioItem, 'id'>) => {
+    const updated = addPortfolioItem(item);
+    setPortfolioItems(updated);
+  };
+
+  const handleUpdatePortfolio = (id: string, updatedData: Partial<PortfolioItem>) => {
+    const updated = updatePortfolioItem(id, updatedData);
+    setPortfolioItems(updated);
+  };
+
+  const handleDeletePortfolio = (id: string) => {
+    const updated = deletePortfolioItem(id);
+    setPortfolioItems(updated);
   };
 
   const handleUpdateStatus = (id: string, newStatus: RequestStatus) => {
@@ -66,16 +93,17 @@ export default function AdminDashboard() {
   // Metrics
   const totalRequests = requests.length;
   const pendingRequests = requests.filter((r) => r.status === 'Pending').length;
+  const totalPortfolios = portfolioItems.length;
 
   const stats = [
     {
       label: 'Portfolio Items',
-      value: '4',
+      value: String(totalPortfolios),
       badge: 'Active Works',
       icon: Briefcase,
       color: 'text-navy',
       bg: 'bg-navy/5',
-      trend: '4 projects showcase',
+      trend: `${totalPortfolios} projects showcase`,
     },
     {
       label: 'Articles Published',
@@ -222,7 +250,7 @@ export default function AdminDashboard() {
                   <span>Portfolio</span>
                 </div>
                 <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-white/10 text-white/70">
-                  4
+                  {totalPortfolios}
                 </span>
               </button>
 
@@ -387,10 +415,24 @@ export default function AdminDashboard() {
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-5">
                 {stats.map((stat, i) => {
                   const Icon = stat.icon;
+                  const isClickable =
+                    stat.label === 'Portfolio Items' ||
+                    stat.label === 'Total Requests' ||
+                    stat.label === 'Pending Requests';
+
+                  const handleClick = () => {
+                    if (stat.label === 'Portfolio Items') setActiveTab('portfolio');
+                    if (stat.label === 'Total Requests' || stat.label === 'Pending Requests')
+                      setActiveTab('requests');
+                  };
+
                   return (
                     <div
                       key={i}
-                      className="bg-white rounded-3xl border border-border/80 p-6 shadow-sm hover:shadow-xl hover:border-gold/40 hover:-translate-y-1 transition-all duration-200 group flex flex-col justify-between"
+                      onClick={handleClick}
+                      className={`bg-white rounded-3xl border border-border/80 p-6 shadow-sm hover:shadow-xl hover:border-gold/40 hover:-translate-y-1 transition-all duration-200 group flex flex-col justify-between ${
+                        isClickable ? 'cursor-pointer' : ''
+                      }`}
                     >
                       <div className="flex items-center justify-between mb-4">
                         <div
@@ -510,17 +552,27 @@ export default function AdminDashboard() {
             />
           )}
 
-          {/* TAB: PORTFOLIO & ARTICLES PLACEHOLDERS */}
-          {(activeTab === 'portfolio' || activeTab === 'articles') && (
+          {/* TAB: PORTFOLIO (Portfolio Projects - Image 1) */}
+          {activeTab === 'portfolio' && (
+            <PortfolioManagement
+              items={portfolioItems}
+              onAdd={handleAddPortfolio}
+              onUpdate={handleUpdatePortfolio}
+              onDelete={handleDeletePortfolio}
+            />
+          )}
+
+          {/* TAB: ARTICLES PLACEHOLDER */}
+          {activeTab === 'articles' && (
             <div className="bg-white rounded-3xl border border-border p-12 text-center shadow-sm animate-fade-in max-w-2xl mx-auto">
               <div className="w-16 h-16 rounded-3xl bg-gold/15 text-gold-700 flex items-center justify-center mx-auto mb-4">
-                {activeTab === 'portfolio' ? <Briefcase size={30} /> : <FileText size={30} />}
+                <FileText size={30} />
               </div>
               <h2 className="text-2xl font-bold text-navy capitalize">
-                {activeTab} Management
+                Articles Management
               </h2>
               <p className="text-navy-300 text-sm mt-2 max-w-md mx-auto leading-relaxed">
-                Halaman ini sudah disiapkan dan siap menerima instruksi detail berikutnya (tambah, edit, dan hapus data {activeTab}) sesuai arahan kamu.
+                Halaman ini sudah disiapkan dan siap menerima instruksi detail berikutnya (tambah, edit, dan hapus artikel) sesuai arahan kamu.
               </p>
               <div className="mt-8 flex items-center justify-center gap-3">
                 <button
@@ -530,10 +582,10 @@ export default function AdminDashboard() {
                   Kembali ke Dashboard
                 </button>
                 <button
-                  onClick={() => setActiveTab('requests')}
+                  onClick={() => setActiveTab('portfolio')}
                   className="px-5 py-2.5 rounded-xl border border-border bg-offwhite text-navy text-xs font-semibold hover:bg-white transition-all cursor-pointer"
                 >
-                  Buka Menu Requests
+                  Buka Menu Portfolio
                 </button>
               </div>
             </div>

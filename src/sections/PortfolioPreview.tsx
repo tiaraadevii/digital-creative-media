@@ -1,65 +1,17 @@
-import { useState } from 'react';
-import { ArrowRight, ArrowUpRight, X, Sparkles, CheckCircle2, MessageSquare } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { ArrowRight, ArrowUpRight, X, Sparkles, CheckCircle2, MessageSquare, ExternalLink } from 'lucide-react';
 import { useReveal } from '@/hooks/useReveal';
-
-interface Project {
-  image: string;
-  category: string;
-  title: string;
-  desc: string;
-  fullDesc: string;
-  year: string;
-  client: string;
-  deliverables: string[];
-  impact: string;
-  isDemo: boolean;
-}
-
-const projects: Project[] = [
-  {
-    image: 'https://images.pexels.com/photos/2177813/pexels-photo-2177813.jpeg?auto=compress&cs=tinysrgb&h=650&w=940',
-    category: 'Event & Media Partnership',
-    title: 'Event Collaboration Highlights',
-    desc: 'Publikasi dan dokumentasi acara dengan jangkauan media yang strategis.',
-    fullDesc:
-      'Solusi terpadu manajemen publikasi dan media partner untuk festival musik, fun run, dan seminar berskala regional. Tim kami mengorkestrasi broadcast sosial media, siaran pers, peliputan live on-ground, hingga aftermovie berkualitas sinematik.',
-    year: '2024 - 2026',
-    client: 'Event Organizers & Kampus Jatim',
-    deliverables: ['Instagram Story & Reels Broadcast', 'Live On-Ground Documentation', 'Aftermovie Recap Video', 'Media Placement'],
-    impact: '15.000+ Peserta Teredukasi & Sold Out Events',
-    isDemo: true,
-  },
-  {
-    image: 'https://images.pexels.com/photos/7661590/pexels-photo-7661590.jpeg?auto=compress&cs=tinysrgb&h=650&w=940',
-    category: 'Brand Promotion',
-    title: 'Brand Promotion Campaign',
-    desc: 'Kampanye promosi brand yang terarah untuk meningkatkan visibilitas dan engagement.',
-    fullDesc:
-      'Aktivasi kampanye pemasaran digital bagi brand F&B, retail, dan produk gaya hidup yang ingin berekspansi di wilayah Malang Raya. Kami menyusun strategi konten, visual storytelling, paid promote tertarget, dan distribusi voucher promosi.',
-    year: '2024 - 2026',
-    client: 'F&B, Retail & Lifestyle Brands',
-    deliverables: ['Social Media Paid Promote', 'Key Opinion Leader (KOL) Coordination', 'Promo Voucher Campaign', 'Audience Analytics Report'],
-    impact: '60.000+ Total Impressions & Store Foot-Traffic',
-    isDemo: true,
-  },
-  {
-    image: 'https://images.pexels.com/photos/4499737/pexels-photo-4499737.jpeg?auto=compress&cs=tinysrgb&h=650&w=940',
-    category: 'Creative Projects',
-    title: 'Creative Content Production',
-    desc: 'Produksi konten kreatif untuk kebutuhan komunikasi brand yang berkesan.',
-    fullDesc:
-      'Layanan produksi visual komprehensif mulai dari konsep narasi, photoshoot profesional katalog produk, hingga pembuatan video teaser komersial yang dirancang khusus untuk membangun identitas brand yang kuat dan memikat.',
-    year: '2024 - 2026',
-    client: 'Corporate & SME Clients',
-    deliverables: ['Commercial Video Teaser', 'Product & Interior Photoshoot', 'Brand Identity Assets', 'Motion Graphics'],
-    impact: 'High-Converting Visual Content & Assets',
-    isDemo: true,
-  },
-];
+import { getPortfolioItems } from '@/services/portfolioStorage';
+import { PortfolioItem } from '@/types/portfolio';
 
 export default function PortfolioPreview() {
   const { ref, visible } = useReveal<HTMLDivElement>();
-  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
+  const [items, setItems] = useState<PortfolioItem[]>([]);
+  const [selectedProject, setSelectedProject] = useState<PortfolioItem | null>(null);
+
+  useEffect(() => {
+    setItems(getPortfolioItems());
+  }, []);
 
   return (
     <section id="portfolio" className="py-20 md:py-28 bg-offwhite">
@@ -88,9 +40,9 @@ export default function PortfolioPreview() {
           ref={ref}
           className={`reveal ${visible ? 'is-visible' : ''} grid md:grid-cols-2 lg:grid-cols-3 gap-6`}
         >
-          {projects.map((project) => (
+          {items.map((project) => (
             <div
-              key={project.title}
+              key={project.id}
               onClick={() => setSelectedProject(project)}
               className="card group cursor-pointer"
             >
@@ -114,7 +66,9 @@ export default function PortfolioPreview() {
                 <h3 className="text-lg font-semibold text-navy mb-2 group-hover:text-gold transition-colors duration-200">
                   {project.title}
                 </h3>
-                <p className="text-slate text-sm leading-relaxed mb-4">{project.desc}</p>
+                <p className="text-slate text-sm leading-relaxed mb-4 line-clamp-2">
+                  {project.description}
+                </p>
                 <span className="inline-flex items-center gap-1 text-navy text-sm font-medium group-hover:text-gold transition-colors duration-200">
                   View Project
                   <ArrowUpRight className="w-4 h-4" />
@@ -165,29 +119,34 @@ export default function PortfolioPreview() {
               <div>
                 <h4 className="text-sm font-semibold uppercase tracking-wider text-slate mb-2">Deskripsi Proyek</h4>
                 <p className="text-navy text-sm md:text-base leading-relaxed">
-                  {selectedProject.fullDesc}
+                  {selectedProject.description}
                 </p>
               </div>
 
-              <div className="p-4 bg-offwhite rounded-xl border border-border">
-                <h4 className="text-xs font-semibold uppercase tracking-wider text-navy mb-3 flex items-center gap-1.5">
-                  <Sparkles className="w-4 h-4 text-gold" />
-                  Cakupan Layanan & Deliverables
-                </h4>
-                <div className="grid sm:grid-cols-2 gap-2">
-                  {selectedProject.deliverables.map((item, idx) => (
-                    <div key={idx} className="flex items-center gap-2 text-xs text-slate">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
-                      <span>{item}</span>
-                    </div>
-                  ))}
+              {selectedProject.client && (
+                <div className="p-4 bg-offwhite rounded-xl border border-border">
+                  <h4 className="text-xs font-semibold uppercase tracking-wider text-navy mb-1.5 flex items-center gap-1.5">
+                    <Sparkles className="w-4 h-4 text-gold" />
+                    Klien / Partner
+                  </h4>
+                  <p className="text-sm font-semibold text-navy">{selectedProject.client}</p>
                 </div>
-              </div>
+              )}
 
-              <div className="flex items-center justify-between p-3.5 bg-emerald-50 border border-emerald-100 rounded-lg text-emerald-800 text-xs font-medium">
-                <span>Dampak / Hasil: {selectedProject.impact}</span>
-                <span className="text-slate text-[11px]">{selectedProject.year}</span>
-              </div>
+              {selectedProject.projectUrl && (
+                <div className="flex items-center justify-between p-3.5 bg-gold-50 border border-gold-200 rounded-lg text-gold-900 text-xs font-medium">
+                  <span>Tautan Proyek Resmi:</span>
+                  <a
+                    href={selectedProject.projectUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 font-bold text-navy hover:underline"
+                  >
+                    Kunjungi Website
+                    <ExternalLink size={13} />
+                  </a>
+                </div>
+              )}
 
               <div className="flex flex-col sm:flex-row gap-3 justify-end pt-2">
                 <button
