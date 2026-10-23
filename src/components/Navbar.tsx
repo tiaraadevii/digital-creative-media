@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Menu, X, ArrowRight } from 'lucide-react';
 
 const navLinks = [
@@ -15,6 +16,9 @@ const navLinks = [
 export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const navigate = useNavigate();
+  const clickCountRef = useRef(0);
+  const clickTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 16);
@@ -27,6 +31,35 @@ export default function Navbar() {
     return () => { document.body.style.overflow = ''; };
   }, [mobileOpen]);
 
+  // Secret keyboard shortcut: Ctrl + Shift + A or Cmd + Shift + A
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'a') {
+        e.preventDefault();
+        navigate('/admin/login');
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [navigate]);
+
+  // Secret triple-click handler on DCM badge
+  const handleLogoSquareClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    clickCountRef.current += 1;
+    if (clickTimerRef.current) clearTimeout(clickTimerRef.current);
+
+    if (clickCountRef.current >= 3) {
+      clickCountRef.current = 0;
+      navigate('/admin/login');
+      return;
+    }
+
+    clickTimerRef.current = setTimeout(() => {
+      clickCountRef.current = 0;
+    }, 1500);
+  };
+
   return (
     <header
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
@@ -37,8 +70,12 @@ export default function Navbar() {
         <div className="flex items-center justify-between h-20">
           {/* Logo */}
           <a href="#home" className="flex items-center gap-2.5 flex-shrink-0" aria-label="CV Digital Creative Media">
-            <div className="w-10 h-10 rounded-lg bg-navy flex items-center justify-center">
-              <span className="text-gold font-bold text-xs tracking-wider">DCM</span>
+            <div
+              onClick={handleLogoSquareClick}
+              className="w-10 h-10 rounded-lg bg-navy flex items-center justify-center cursor-pointer select-none active:scale-95 transition-transform"
+              title="CV Digital Creative Media"
+            >
+              <span className="text-gold font-bold text-xs tracking-wider pointer-events-none">DCM</span>
             </div>
             <span className="text-navy font-semibold text-sm hidden sm:block leading-tight">
               Digital Creative Media

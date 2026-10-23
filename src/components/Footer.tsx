@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import { Instagram, Mail, Phone, ArrowUpRight } from 'lucide-react';
 
 const footerLinks = [
@@ -89,12 +90,13 @@ export default function Footer() {
           <div className="flex items-center gap-4 text-xs text-white/30">
             <span>Malang, Jawa Timur — Indonesia</span>
             <span>·</span>
-            <a
-              href="/admin/login"
-              className="text-white/40 hover:text-gold transition-colors"
+            <Link
+              to="/admin/login"
+              className="text-white/40 hover:text-gold transition-colors flex items-center gap-1"
+              title="Admin Portal"
             >
-              Admin
-            </a>
+              <span>Admin</span>
+            </Link>
           </div>
         </div>
       </div>
