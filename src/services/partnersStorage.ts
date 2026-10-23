@@ -1,4 +1,5 @@
 import { PartnerEvent, PartnerCategory } from '@/types/partner';
+import { supabase } from '@/lib/supabase';
 
 const PARTNERS_STORAGE_KEY = 'dcm_partners_items';
 
@@ -737,11 +738,92 @@ export const INITIAL_PARTNERS: PartnerEvent[] = [
   },
 ];
 
+function rowToPartner(row: any): PartnerEvent {
+  return {
+    id: row.id,
+    name: row.name,
+    officialTitle: row.official_title,
+    category: row.category as PartnerCategory,
+    categoryLabel: row.category_label,
+    collabType: row.collab_type,
+    dateOrYear: row.date_or_year,
+    location: row.location,
+    venue: row.venue,
+    tagline: row.tagline,
+    desc: row.desc_text,
+    highlights: Array.isArray(row.highlights) ? row.highlights : [],
+    impactBadge: row.impact_badge,
+    logoUrl: row.logo_url || undefined,
+    posterUrl: row.poster_url || undefined,
+    logoBg: row.logo_bg || undefined,
+    accentGradient: row.accent_gradient || undefined,
+    badgeColor: row.badge_color || undefined,
+    createdAt: row.created_at,
+  };
+}
+
+function partnerToRow(p: PartnerEvent) {
+  return {
+    id: p.id,
+    name: p.name,
+    official_title: p.officialTitle,
+    category: p.category,
+    category_label: p.categoryLabel,
+    collab_type: p.collabType,
+    date_or_year: p.dateOrYear,
+    location: p.location,
+    venue: p.venue,
+    tagline: p.tagline,
+    desc_text: p.desc,
+    highlights: p.highlights || [],
+    impact_badge: p.impactBadge,
+    logo_url: p.logoUrl || null,
+    poster_url: p.posterUrl || null,
+    logo_bg: p.logoBg || null,
+    accent_gradient: p.accentGradient || null,
+    badge_color: p.badgeColor || null,
+  };
+}
+
+let isSyncing = false;
+export async function syncPartnersFromCloud(): Promise<PartnerEvent[]> {
+  if (isSyncing) return getPartners();
+  isSyncing = true;
+  try {
+    const { data, error } = await supabase
+      .from('partner_events')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Failed to fetch partners from Supabase:', error);
+      return getPartners();
+    }
+
+    if (Array.isArray(data) && data.length > 0) {
+      const items = data.map(rowToPartner);
+      localStorage.setItem(PARTNERS_STORAGE_KEY, JSON.stringify(items));
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new Event('dcm_partners_updated'));
+      }
+      return items;
+    }
+  } catch (err) {
+    console.error('Error syncing partners from cloud:', err);
+  } finally {
+    isSyncing = false;
+  }
+  return getPartners();
+}
+
 export function getPartners(): PartnerEvent[] {
+  if (typeof window !== 'undefined') {
+    syncPartnersFromCloud();
+  }
+
   try {
     const raw = localStorage.getItem(PARTNERS_STORAGE_KEY);
     if (!raw) {
-      localStorage.setItem(PARTNERS_STORAGE_KEY, JSON.stringify(INITIAL_PARTNERS));
       return INITIAL_PARTNERS;
     }
     const parsed = JSON.parse(raw);
@@ -779,6 +861,15 @@ export function addPartner(
 
   const updated = [newPartner, ...current];
   savePartners(updated);
+
+  // Push to Supabase cloud
+  supabase
+    .from('partner_events')
+    .insert([partnerToRow(newPartner)])
+    .then(({ error }) => {
+      if (error) console.error('Supabase add partner error:', error);
+    });
+
   return updated;
 }
 
@@ -789,6 +880,19 @@ export function updatePartner(
   const current = getPartners();
   const updated = current.map((item) => (item.id === id ? { ...item, ...updatedData } : item));
   savePartners(updated);
+
+  // Push to Supabase cloud
+  const target = updated.find((i) => i.id === id);
+  if (target) {
+    supabase
+      .from('partner_events')
+      .update(partnerToRow(target))
+      .eq('id', id)
+      .then(({ error }) => {
+        if (error) console.error('Supabase update partner error:', error);
+      });
+  }
+
   return updated;
 }
 
@@ -796,5 +900,15 @@ export function deletePartner(id: string): PartnerEvent[] {
   const current = getPartners();
   const updated = current.filter((item) => item.id !== id);
   savePartners(updated);
+
+  // Delete from Supabase cloud
+  supabase
+    .from('partner_events')
+    .delete()
+    .eq('id', id)
+    .then(({ error }) => {
+      if (error) console.error('Supabase delete partner error:', error);
+    });
+
   return updated;
 }

@@ -1,4 +1,5 @@
 import { ArticleItem } from '@/types/article';
+import { supabase } from '@/lib/supabase';
 
 const ARTICLES_STORAGE_KEY = 'dcm_articles_items';
 
@@ -33,11 +34,72 @@ export const INITIAL_ARTICLES: ArticleItem[] = [
   },
 ];
 
+function rowToArticle(row: any): ArticleItem {
+  return {
+    id: row.id,
+    title: row.title,
+    excerpt: row.excerpt,
+    content: row.content,
+    coverImage: row.cover_image,
+    author: row.author,
+    status: row.status as 'Published' | 'Draft',
+    date: row.date,
+    createdAt: row.created_at,
+  };
+}
+
+function articleToRow(article: ArticleItem) {
+  return {
+    id: article.id,
+    title: article.title,
+    excerpt: article.excerpt,
+    content: article.content,
+    cover_image: article.coverImage,
+    author: article.author,
+    status: article.status,
+    date: article.date,
+  };
+}
+
+let isSyncing = false;
+export async function syncArticlesFromCloud(): Promise<ArticleItem[]> {
+  if (isSyncing) return getArticles();
+  isSyncing = true;
+  try {
+    const { data, error } = await supabase
+      .from('articles')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Failed to fetch articles from Supabase:', error);
+      return getArticles();
+    }
+
+    if (Array.isArray(data)) {
+      const items = data.map(rowToArticle);
+      localStorage.setItem(ARTICLES_STORAGE_KEY, JSON.stringify(items));
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new Event('dcm_articles_updated'));
+      }
+      return items;
+    }
+  } catch (err) {
+    console.error('Error syncing articles:', err);
+  } finally {
+    isSyncing = false;
+  }
+  return getArticles();
+}
+
 export function getArticles(): ArticleItem[] {
+  if (typeof window !== 'undefined') {
+    syncArticlesFromCloud();
+  }
+
   try {
     const raw = localStorage.getItem(ARTICLES_STORAGE_KEY);
     if (!raw) {
-      localStorage.setItem(ARTICLES_STORAGE_KEY, JSON.stringify(INITIAL_ARTICLES));
       return INITIAL_ARTICLES;
     }
     const parsed = JSON.parse(raw);
@@ -63,21 +125,30 @@ export function addArticle(
 ): ArticleItem[] {
   const current = getArticles();
   const now = new Date();
-  const formattedDate = now.toLocaleDateString('en-US', {
+  const dateFormatted = now.toLocaleDateString('en-US', {
     month: 'short',
     day: 'numeric',
     year: 'numeric',
   });
 
-  const newItem: ArticleItem = {
+  const newArticle: ArticleItem = {
     ...article,
     id: `art-${Date.now()}`,
-    date: formattedDate,
+    date: dateFormatted,
     createdAt: now.toISOString(),
   };
 
-  const updated = [newItem, ...current];
+  const updated = [newArticle, ...current];
   saveArticles(updated);
+
+  // Push to Supabase cloud
+  supabase
+    .from('articles')
+    .insert([articleToRow(newArticle)])
+    .then(({ error }) => {
+      if (error) console.error('Supabase add article error:', error);
+    });
+
   return updated;
 }
 
@@ -88,6 +159,19 @@ export function updateArticle(
   const current = getArticles();
   const updated = current.map((item) => (item.id === id ? { ...item, ...updatedData } : item));
   saveArticles(updated);
+
+  // Push to Supabase cloud
+  const target = updated.find((i) => i.id === id);
+  if (target) {
+    supabase
+      .from('articles')
+      .update(articleToRow(target))
+      .eq('id', id)
+      .then(({ error }) => {
+        if (error) console.error('Supabase update article error:', error);
+      });
+  }
+
   return updated;
 }
 
@@ -95,5 +179,15 @@ export function deleteArticle(id: string): ArticleItem[] {
   const current = getArticles();
   const updated = current.filter((item) => item.id !== id);
   saveArticles(updated);
+
+  // Delete from Supabase cloud
+  supabase
+    .from('articles')
+    .delete()
+    .eq('id', id)
+    .then(({ error }) => {
+      if (error) console.error('Supabase delete article error:', error);
+    });
+
   return updated;
 }

@@ -1,31 +1,32 @@
 import { CollaborationRequest, RequestStatus } from '@/types/admin';
+import { supabase } from '@/lib/supabase';
 
 const STORAGE_KEY = 'dcm_collaboration_requests';
 
 export const INITIAL_REQUESTS: CollaborationRequest[] = [
   {
     id: 'req-001',
-    name: 'eca',
-    email: 'keren@GMAIL.COM',
-    phone: '0917673883',
-    company: 'rixhcrazy',
-    projectType: 'Branding & Identity',
-    message: 'KEREN KAN',
-    status: 'Responded',
-    date: 'Oct 16, 2026',
-    createdAt: '2026-10-16T10:30:00Z',
+    name: 'Aditya Pratama',
+    email: 'aditya@startupdigital.id',
+    phone: '081234567890',
+    company: 'Nusantara Tech',
+    projectType: 'Full Branding & Website',
+    message: 'Halo tim DCM, kami sedang mencari partner kreatif untuk rebranding dan pembuatan website company profile modern.',
+    status: 'Pending',
+    date: 'Oct 20, 2026',
+    createdAt: '2026-10-20T08:30:00Z',
   },
   {
     id: 'req-002',
-    name: 'BEM Fakultas Ilmu Komputer',
-    email: 'partnership.filkom@univ.ac.id',
-    phone: '081234567890',
-    company: 'Universitas Brawijaya',
-    projectType: 'Media Partner Event Lari / Festival',
-    message: 'Halo tim DCM, kami ingin mengajukan penawaran media partner untuk event tahunan festival IT & sport dengan estimasi 1.500 peserta.',
-    status: 'Pending',
-    date: 'Oct 21, 2026',
-    createdAt: '2026-10-21T09:15:00Z',
+    name: 'Sarah Wijaya',
+    email: 'sarah.w@festivalkreatif.com',
+    phone: '081987654321',
+    company: 'Festival Musik Jatim',
+    projectType: 'Official Event Media Partner',
+    message: 'Ingin mengajukan proposal kerja sama media partner publikasi dan coverage visual konser di Malang.',
+    status: 'Replied',
+    date: 'Oct 20, 2026',
+    createdAt: '2026-10-20T10:15:00Z',
   },
   {
     id: 'req-003',
@@ -41,15 +42,78 @@ export const INITIAL_REQUESTS: CollaborationRequest[] = [
   },
 ];
 
+function rowToRequest(row: any): CollaborationRequest {
+  return {
+    id: row.id,
+    name: row.name,
+    email: row.email || '',
+    phone: row.phone || '',
+    company: row.company || '',
+    projectType: row.project_type,
+    message: row.message,
+    status: row.status as RequestStatus,
+    date: row.date || '',
+    createdAt: row.created_at,
+  };
+}
+
+function requestToRow(req: CollaborationRequest) {
+  return {
+    id: req.id,
+    name: req.name,
+    email: req.email || '',
+    phone: req.phone || '',
+    company: req.company || '',
+    project_type: req.projectType,
+    message: req.message,
+    status: req.status,
+    date: req.date || '',
+  };
+}
+
+let isSyncing = false;
+export async function syncRequestsFromCloud(): Promise<CollaborationRequest[]> {
+  if (isSyncing) return getRequests();
+  isSyncing = true;
+  try {
+    const { data, error } = await supabase
+      .from('collaboration_requests')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Failed to fetch requests from Supabase:', error);
+      return getRequests();
+    }
+
+    if (Array.isArray(data)) {
+      const items = data.map(rowToRequest);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new Event('dcm_requests_updated'));
+      }
+      return items;
+    }
+  } catch (err) {
+    console.error('Error syncing requests:', err);
+  } finally {
+    isSyncing = false;
+  }
+  return getRequests();
+}
+
 export function getRequests(): CollaborationRequest[] {
+  if (typeof window !== 'undefined') {
+    syncRequestsFromCloud();
+  }
+
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(INITIAL_REQUESTS));
       return INITIAL_REQUESTS;
     }
     const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : INITIAL_REQUESTS;
+    return Array.isArray(parsed) && parsed.length > 0 ? parsed : INITIAL_REQUESTS;
   } catch {
     return INITIAL_REQUESTS;
   }
@@ -70,6 +134,16 @@ export function updateRequestStatus(id: string, newStatus: RequestStatus): Colla
   const current = getRequests();
   const updated = current.map((r) => (r.id === id ? { ...r, status: newStatus } : r));
   saveRequests(updated);
+
+  // Push to Supabase cloud
+  supabase
+    .from('collaboration_requests')
+    .update({ status: newStatus })
+    .eq('id', id)
+    .then(({ error }) => {
+      if (error) console.error('Supabase update request error:', error);
+    });
+
   return updated;
 }
 
@@ -77,26 +151,47 @@ export function deleteRequest(id: string): CollaborationRequest[] {
   const current = getRequests();
   const updated = current.filter((r) => r.id !== id);
   saveRequests(updated);
+
+  // Delete from Supabase cloud
+  supabase
+    .from('collaboration_requests')
+    .delete()
+    .eq('id', id)
+    .then(({ error }) => {
+      if (error) console.error('Supabase delete request error:', error);
+    });
+
   return updated;
 }
 
-export function addRequest(request: Omit<CollaborationRequest, 'id' | 'date' | 'createdAt'>): CollaborationRequest[] {
+export function addRequest(
+  request: Omit<CollaborationRequest, 'id' | 'date' | 'createdAt'>
+): CollaborationRequest[] {
   const current = getRequests();
   const now = new Date();
-  const formattedDate = now.toLocaleDateString('en-US', {
+  const dateFormatted = now.toLocaleDateString('en-US', {
     month: 'short',
     day: 'numeric',
     year: 'numeric',
   });
 
-  const newEntry: CollaborationRequest = {
+  const newRequest: CollaborationRequest = {
     ...request,
     id: `req-${Date.now()}`,
-    date: formattedDate,
+    date: dateFormatted,
     createdAt: now.toISOString(),
   };
 
-  const updated = [newEntry, ...current];
+  const updated = [newRequest, ...current];
   saveRequests(updated);
+
+  // Push to Supabase cloud
+  supabase
+    .from('collaboration_requests')
+    .insert([requestToRow(newRequest)])
+    .then(({ error }) => {
+      if (error) console.error('Supabase add request error:', error);
+    });
+
   return updated;
 }
