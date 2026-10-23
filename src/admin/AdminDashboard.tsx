@@ -18,10 +18,12 @@ import {
   ArrowRight,
   Bell,
   Search,
+  Handshake,
 } from 'lucide-react';
 import { CollaborationRequest, RequestStatus } from '@/types/admin';
 import { PortfolioItem } from '@/types/portfolio';
 import { ArticleItem } from '@/types/article';
+import { PartnerEvent } from '@/types/partner';
 import {
   getRequests,
   updateRequestStatus,
@@ -39,17 +41,24 @@ import {
   updateArticle,
   deleteArticle,
 } from '@/services/articlesStorage';
+import {
+  getPartners,
+  addPartner,
+  updatePartner,
+  deletePartner,
+} from '@/services/partnersStorage';
 import CollaborationRequests from './CollaborationRequests';
 import RequestDetailModal from './RequestDetailModal';
 import PortfolioManagement from './PortfolioManagement';
 import ArticlesManagement from './ArticlesManagement';
+import PartnersManagement from './PartnersManagement';
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'portfolio' | 'articles' | 'requests'>(
-    'dashboard'
-  );
+  const [activeTab, setActiveTab] = useState<
+    'dashboard' | 'portfolio' | 'articles' | 'partners' | 'requests'
+  >('dashboard');
   const [requests, setRequests] = useState<CollaborationRequest[]>([]);
   const [selectedRequest, setSelectedRequest] = useState<CollaborationRequest | null>(null);
 
@@ -59,11 +68,15 @@ export default function AdminDashboard() {
   // Articles items state
   const [articles, setArticles] = useState<ArticleItem[]>([]);
 
+  // Partners items state
+  const [partners, setPartners] = useState<PartnerEvent[]>([]);
+
   // Load data from storage
   useEffect(() => {
     setRequests(getRequests());
     setPortfolioItems(getPortfolioItems());
     setArticles(getArticles());
+    setPartners(getPartners());
   }, []);
 
   const handleSignOut = () => {
@@ -101,6 +114,21 @@ export default function AdminDashboard() {
     setArticles(updated);
   };
 
+  const handleAddPartner = (item: Omit<PartnerEvent, 'id' | 'createdAt'>) => {
+    const updated = addPartner(item);
+    setPartners(updated);
+  };
+
+  const handleUpdatePartner = (id: string, updatedData: Partial<PartnerEvent>) => {
+    const updated = updatePartner(id, updatedData);
+    setPartners(updated);
+  };
+
+  const handleDeletePartner = (id: string) => {
+    const updated = deletePartner(id);
+    setPartners(updated);
+  };
+
   const handleUpdateStatus = (id: string, newStatus: RequestStatus) => {
     const updated = updateRequestStatus(id, newStatus);
     setRequests(updated);
@@ -122,6 +150,7 @@ export default function AdminDashboard() {
   const pendingRequests = requests.filter((r) => r.status === 'Pending').length;
   const totalPortfolios = portfolioItems.length;
   const totalArticles = articles.length;
+  const totalPartners = partners.length;
 
   const stats = [
     {
@@ -132,6 +161,15 @@ export default function AdminDashboard() {
       color: 'text-navy',
       bg: 'bg-navy/5',
       trend: `${totalPortfolios} projects showcase`,
+    },
+    {
+      label: 'Partner Events',
+      value: String(totalPartners),
+      badge: 'Official',
+      icon: Handshake,
+      color: 'text-gold-700',
+      bg: 'bg-gold/15',
+      trend: `${totalPartners} event resmi`,
     },
     {
       label: 'Articles Published',
@@ -149,15 +187,6 @@ export default function AdminDashboard() {
       icon: Inbox,
       color: 'text-navy',
       bg: 'bg-navy/5',
-      trend: 'Kolaborasi masuk',
-    },
-    {
-      label: 'Pending Requests',
-      value: String(pendingRequests),
-      badge: pendingRequests > 0 ? 'Need Action' : 'Semua Terjawab',
-      icon: TrendingUp,
-      color: pendingRequests > 0 ? 'text-amber-600' : 'text-gold',
-      bg: pendingRequests > 0 ? 'bg-amber-500/10' : 'bg-gold/10',
       trend: `${pendingRequests} belum direspon`,
     },
   ];
@@ -307,6 +336,29 @@ export default function AdminDashboard() {
 
               <button
                 onClick={() => {
+                  setActiveTab('partners');
+                  setMobileMenuOpen(false);
+                }}
+                className={`w-full flex items-center justify-between px-3.5 py-3 rounded-2xl text-sm font-semibold transition-all group ${
+                  activeTab === 'partners'
+                    ? 'bg-gradient-to-r from-gold/20 to-gold/5 text-gold border border-gold/30 shadow-md'
+                    : 'text-white/60 hover:text-white hover:bg-white/5'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <Handshake
+                    size={18}
+                    className={activeTab === 'partners' ? 'text-gold' : 'text-white/40 group-hover:text-white'}
+                  />
+                  <span>Partnership</span>
+                </div>
+                <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-white/10 text-white/70">
+                  {totalPartners}
+                </span>
+              </button>
+
+              <button
+                onClick={() => {
                   setActiveTab('requests');
                   setMobileMenuOpen(false);
                 }}
@@ -445,12 +497,14 @@ export default function AdminDashboard() {
                   const Icon = stat.icon;
                   const isClickable =
                     stat.label === 'Portfolio Items' ||
+                    stat.label === 'Partner Events' ||
                     stat.label === 'Articles Published' ||
                     stat.label === 'Total Requests' ||
                     stat.label === 'Pending Requests';
 
                   const handleClick = () => {
                     if (stat.label === 'Portfolio Items') setActiveTab('portfolio');
+                    if (stat.label === 'Partner Events') setActiveTab('partners');
                     if (stat.label === 'Articles Published') setActiveTab('articles');
                     if (stat.label === 'Total Requests' || stat.label === 'Pending Requests')
                       setActiveTab('requests');
@@ -599,6 +653,16 @@ export default function AdminDashboard() {
               onAdd={handleAddArticle}
               onUpdate={handleUpdateArticle}
               onDelete={handleDeleteArticle}
+            />
+          )}
+
+          {/* TAB: PARTNERS (Official Event Partnerships) */}
+          {activeTab === 'partners' && (
+            <PartnersManagement
+              partners={partners}
+              onAdd={handleAddPartner}
+              onUpdate={handleUpdatePartner}
+              onDelete={handleDeletePartner}
             />
           )}
         </main>
