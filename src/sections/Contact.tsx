@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { Mail, Phone, Instagram, MapPin, Send, Info, CheckCircle2, X, MessageSquare, ArrowUpRight } from 'lucide-react';
 import { useReveal } from '@/hooks/useReveal';
 
+import { addRequest } from '@/services/requestsStorage';
+
 export default function Contact() {
   const { ref, visible } = useReveal<HTMLDivElement>();
   const [formState, setFormState] = useState({
@@ -24,6 +26,23 @@ export default function Contact() {
       alert('Mohon isi nama dan kontak Anda.');
       return;
     }
+
+    // Auto-save to admin requests storage
+    try {
+      const isEmail = formState.contact.includes('@');
+      addRequest({
+        name: formState.name,
+        email: isEmail ? formState.contact : '',
+        phone: isEmail ? '' : formState.contact,
+        company: 'Online Submission',
+        projectType: formState.type || 'General Collaboration',
+        message: formState.message || '-',
+        status: 'Pending',
+      });
+    } catch (err) {
+      console.error(err);
+    }
+
     setSubmitted(true);
   };
 

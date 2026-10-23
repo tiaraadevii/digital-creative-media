@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard,
@@ -12,325 +12,542 @@ import {
   Menu,
   X,
   CheckCircle2,
+  Clock,
+  Eye,
+  Sparkles,
+  ArrowRight,
+  Bell,
+  Search,
 } from 'lucide-react';
-
-interface RequestItem {
-  id: string;
-  name: string;
-  email: string;
-  date: string;
-  status: 'Responded' | 'Pending';
-  message?: string;
-}
+import { CollaborationRequest, RequestStatus } from '@/types/admin';
+import {
+  getRequests,
+  updateRequestStatus,
+  deleteRequest,
+} from '@/services/requestsStorage';
+import CollaborationRequests from './CollaborationRequests';
+import RequestDetailModal from './RequestDetailModal';
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'portfolio' | 'articles' | 'requests'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'portfolio' | 'articles' | 'requests'>(
+    'dashboard'
+  );
+  const [requests, setRequests] = useState<CollaborationRequest[]>([]);
+  const [selectedRequest, setSelectedRequest] = useState<CollaborationRequest | null>(null);
+
+  // Load requests from storage
+  useEffect(() => {
+    setRequests(getRequests());
+  }, []);
 
   const handleSignOut = () => {
     sessionStorage.removeItem('dcm_admin');
     navigate('/admin/login');
   };
 
+  const handleUpdateStatus = (id: string, newStatus: RequestStatus) => {
+    const updated = updateRequestStatus(id, newStatus);
+    setRequests(updated);
+    if (selectedRequest && selectedRequest.id === id) {
+      setSelectedRequest({ ...selectedRequest, status: newStatus });
+    }
+  };
+
+  const handleDeleteRequest = (id: string) => {
+    const updated = deleteRequest(id);
+    setRequests(updated);
+    if (selectedRequest && selectedRequest.id === id) {
+      setSelectedRequest(null);
+    }
+  };
+
+  // Metrics
+  const totalRequests = requests.length;
+  const pendingRequests = requests.filter((r) => r.status === 'Pending').length;
+
   const stats = [
     {
       label: 'Portfolio Items',
       value: '4',
+      badge: 'Active Works',
       icon: Briefcase,
       color: 'text-navy',
-      bg: 'bg-navy-50',
+      bg: 'bg-navy/5',
+      trend: '4 projects showcase',
     },
     {
       label: 'Articles Published',
       value: '2',
+      badge: 'Live',
       icon: FileText,
       color: 'text-navy',
-      bg: 'bg-navy-50',
+      bg: 'bg-navy/5',
+      trend: '2 latest articles',
     },
     {
       label: 'Total Requests',
-      value: '1',
+      value: String(totalRequests),
+      badge: `${totalRequests} inbound`,
       icon: Inbox,
       color: 'text-navy',
-      bg: 'bg-navy-50',
+      bg: 'bg-navy/5',
+      trend: 'Kolaborasi masuk',
     },
     {
       label: 'Pending Requests',
-      value: '0',
+      value: String(pendingRequests),
+      badge: pendingRequests > 0 ? 'Need Action' : 'Semua Terjawab',
       icon: TrendingUp,
-      color: 'text-gold',
-      bg: 'bg-gold-50',
+      color: pendingRequests > 0 ? 'text-amber-600' : 'text-gold',
+      bg: pendingRequests > 0 ? 'bg-amber-500/10' : 'bg-gold/10',
+      trend: `${pendingRequests} belum direspon`,
     },
   ];
 
-  const recentRequests: RequestItem[] = [
-    {
-      id: '1',
-      name: 'eca',
-      email: 'keren@gmail.com',
-      date: 'Oct 16',
-      status: 'Responded',
-    },
-  ];
+  const getStatusBadge = (status: RequestStatus) => {
+    switch (status) {
+      case 'Pending':
+        return {
+          bg: 'bg-amber-50 text-amber-700 border-amber-200',
+          icon: Clock,
+          label: 'Pending',
+        };
+      case 'Read':
+        return {
+          bg: 'bg-blue-50 text-blue-700 border-blue-200',
+          icon: Eye,
+          label: 'Read',
+        };
+      case 'Responded':
+        return {
+          bg: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+          icon: CheckCircle2,
+          label: 'Responded',
+        };
+    }
+  };
 
   return (
-    <div className="min-h-screen bg-offwhite flex font-sans">
+    <div className="min-h-screen bg-[#F6F7F9] flex font-sans text-navy">
       {/* Sidebar Mobile Overlay */}
       {mobileMenuOpen && (
         <div
-          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+          className="fixed inset-0 bg-navy-950/60 backdrop-blur-xs z-40 lg:hidden"
           onClick={() => setMobileMenuOpen(false)}
         />
       )}
 
-      {/* Sidebar */}
+      {/* Sidebar Navigation */}
       <aside
-        className={`fixed lg:sticky top-0 h-screen w-64 bg-navy-900 text-white flex flex-col justify-between z-50 transition-transform duration-200 ${
+        className={`fixed lg:sticky top-0 h-screen w-72 bg-[#09111E] text-white flex flex-col justify-between z-50 transition-transform duration-300 ease-out border-r border-white/5 ${
           mobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
         }`}
       >
         <div>
-          {/* Brand */}
-          <div className="p-6 border-b border-navy-700/60 flex items-center justify-between">
-            <div>
-              <h1 className="text-lg font-bold tracking-tight text-white leading-none">
-                CV DIGITAL
-              </h1>
-              <p className="text-gold text-[10px] font-bold tracking-[0.2em] uppercase mt-1">
-                Creative Media
-              </p>
-              <span className="inline-block text-[11px] text-navy-300 mt-2 font-medium">
-                Admin Panel
-              </span>
+          {/* Brand Header */}
+          <div className="p-6 border-b border-white/10 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-gold via-gold-500 to-gold-600 text-navy font-bold flex items-center justify-center shadow-md shadow-gold/20">
+                <span className="text-xs font-black tracking-wider">DCM</span>
+              </div>
+              <div>
+                <h1 className="text-base font-bold tracking-tight text-white leading-none">
+                  CV DIGITAL
+                </h1>
+                <p className="text-gold text-[10px] font-bold tracking-[0.2em] uppercase mt-1">
+                  Creative Media
+                </p>
+                <div className="mt-1 flex items-center gap-1 text-[10px] text-white/40">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                  <span>Admin Panel v2.0</span>
+                </div>
+              </div>
             </div>
+
             <button
               onClick={() => setMobileMenuOpen(false)}
-              className="lg:hidden text-navy-300 hover:text-white"
+              className="lg:hidden text-white/50 hover:text-white"
             >
               <X size={20} />
             </button>
           </div>
 
-          {/* Navigation Links */}
-          <nav className="p-4 space-y-1">
-            <button
-              onClick={() => {
-                setActiveTab('dashboard');
-                setMobileMenuOpen(false);
-              }}
-              className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all ${
-                activeTab === 'dashboard'
-                  ? 'bg-navy-700 text-white shadow-sm'
-                  : 'text-navy-200 hover:text-white hover:bg-navy-800'
-              }`}
-            >
-              <LayoutDashboard size={18} className={activeTab === 'dashboard' ? 'text-gold' : ''} />
-              Dashboard
-            </button>
+          {/* Nav List */}
+          <div className="px-4 py-6">
+            <p className="px-3 text-[10px] uppercase font-bold tracking-[0.2em] text-white/30 mb-3">
+              Menu Utama
+            </p>
+            <nav className="space-y-1.5">
+              <button
+                onClick={() => {
+                  setActiveTab('dashboard');
+                  setMobileMenuOpen(false);
+                }}
+                className={`w-full flex items-center justify-between px-3.5 py-3 rounded-2xl text-sm font-semibold transition-all group ${
+                  activeTab === 'dashboard'
+                    ? 'bg-gradient-to-r from-gold/20 to-gold/5 text-gold border border-gold/30 shadow-md'
+                    : 'text-white/60 hover:text-white hover:bg-white/5'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <LayoutDashboard
+                    size={18}
+                    className={activeTab === 'dashboard' ? 'text-gold' : 'text-white/40 group-hover:text-white'}
+                  />
+                  <span>Dashboard</span>
+                </div>
+                {activeTab === 'dashboard' && (
+                  <span className="w-1.5 h-1.5 rounded-full bg-gold" />
+                )}
+              </button>
 
-            <button
-              onClick={() => {
-                setActiveTab('portfolio');
-                setMobileMenuOpen(false);
-              }}
-              className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all ${
-                activeTab === 'portfolio'
-                  ? 'bg-navy-700 text-white shadow-sm'
-                  : 'text-navy-200 hover:text-white hover:bg-navy-800'
-              }`}
-            >
-              <Briefcase size={18} />
-              Portfolio
-            </button>
+              <button
+                onClick={() => {
+                  setActiveTab('portfolio');
+                  setMobileMenuOpen(false);
+                }}
+                className={`w-full flex items-center justify-between px-3.5 py-3 rounded-2xl text-sm font-semibold transition-all group ${
+                  activeTab === 'portfolio'
+                    ? 'bg-gradient-to-r from-gold/20 to-gold/5 text-gold border border-gold/30 shadow-md'
+                    : 'text-white/60 hover:text-white hover:bg-white/5'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <Briefcase
+                    size={18}
+                    className={activeTab === 'portfolio' ? 'text-gold' : 'text-white/40 group-hover:text-white'}
+                  />
+                  <span>Portfolio</span>
+                </div>
+                <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-white/10 text-white/70">
+                  4
+                </span>
+              </button>
 
-            <button
-              onClick={() => {
-                setActiveTab('articles');
-                setMobileMenuOpen(false);
-              }}
-              className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all ${
-                activeTab === 'articles'
-                  ? 'bg-navy-700 text-white shadow-sm'
-                  : 'text-navy-200 hover:text-white hover:bg-navy-800'
-              }`}
-            >
-              <FileText size={18} />
-              Articles
-            </button>
+              <button
+                onClick={() => {
+                  setActiveTab('articles');
+                  setMobileMenuOpen(false);
+                }}
+                className={`w-full flex items-center justify-between px-3.5 py-3 rounded-2xl text-sm font-semibold transition-all group ${
+                  activeTab === 'articles'
+                    ? 'bg-gradient-to-r from-gold/20 to-gold/5 text-gold border border-gold/30 shadow-md'
+                    : 'text-white/60 hover:text-white hover:bg-white/5'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <FileText
+                    size={18}
+                    className={activeTab === 'articles' ? 'text-gold' : 'text-white/40 group-hover:text-white'}
+                  />
+                  <span>Articles</span>
+                </div>
+                <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-white/10 text-white/70">
+                  2
+                </span>
+              </button>
 
-            <button
-              onClick={() => {
-                setActiveTab('requests');
-                setMobileMenuOpen(false);
-              }}
-              className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all ${
-                activeTab === 'requests'
-                  ? 'bg-navy-700 text-white shadow-sm'
-                  : 'text-navy-200 hover:text-white hover:bg-navy-800'
-              }`}
-            >
-              <Inbox size={18} />
-              Requests
-            </button>
-          </nav>
+              <button
+                onClick={() => {
+                  setActiveTab('requests');
+                  setMobileMenuOpen(false);
+                }}
+                className={`w-full flex items-center justify-between px-3.5 py-3 rounded-2xl text-sm font-semibold transition-all group ${
+                  activeTab === 'requests'
+                    ? 'bg-gradient-to-r from-gold/20 to-gold/5 text-gold border border-gold/30 shadow-md'
+                    : 'text-white/60 hover:text-white hover:bg-white/5'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <Inbox
+                    size={18}
+                    className={activeTab === 'requests' ? 'text-gold' : 'text-white/40 group-hover:text-white'}
+                  />
+                  <span>Requests</span>
+                </div>
+                {totalRequests > 0 && (
+                  <span
+                    className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${
+                      pendingRequests > 0
+                        ? 'bg-amber-500 text-navy font-black'
+                        : 'bg-white/10 text-white/70'
+                    }`}
+                  >
+                    {totalRequests}
+                  </span>
+                )}
+              </button>
+            </nav>
+          </div>
         </div>
 
-        {/* Sidebar Footer Actions */}
-        <div className="p-4 border-t border-navy-700/60 space-y-1">
+        {/* Sidebar Footer */}
+        <div className="p-4 border-t border-white/10 space-y-2">
+          {/* User info card */}
+          <div className="p-3 rounded-2xl bg-white/[0.04] border border-white/5 flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-gold/20 text-gold font-bold text-xs flex items-center justify-center border border-gold/30 shrink-0">
+              AD
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-xs font-semibold text-white truncate">Administrator</p>
+              <p className="text-[11px] text-white/40 truncate">admin@cvdigitalcreative.media</p>
+            </div>
+          </div>
+
           <a
             href="/"
             target="_blank"
             rel="noopener noreferrer"
-            className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium text-navy-200 hover:text-white hover:bg-navy-800 transition-all"
+            className="w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-semibold text-white/60 hover:text-white hover:bg-white/5 transition-all"
           >
-            <ExternalLink size={18} />
-            View Website
+            <ExternalLink size={16} />
+            <span>Lihat Website Publik</span>
           </a>
 
           <button
             onClick={handleSignOut}
-            className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium text-red-400 hover:text-red-300 hover:bg-navy-800 transition-all"
+            className="w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-semibold text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 transition-all cursor-pointer"
           >
-            <LogOut size={18} />
-            Sign Out
+            <LogOut size={16} />
+            <span>Sign Out</span>
           </button>
         </div>
       </aside>
 
-      {/* Main Content Area */}
+      {/* Main Content */}
       <div className="flex-1 flex flex-col min-w-0">
-        {/* Top bar */}
-        <header className="bg-white border-b border-border sticky top-0 z-30 px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
+        {/* Top Navbar */}
+        <header className="bg-white/80 backdrop-blur-md border-b border-border sticky top-0 z-30 px-6 md:px-8 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-4">
             <button
               onClick={() => setMobileMenuOpen(true)}
-              className="lg:hidden text-navy-400 hover:text-navy"
+              className="lg:hidden p-2 rounded-xl border border-border text-navy-400 hover:text-navy hover:bg-offwhite"
             >
-              <Menu size={22} />
+              <Menu size={20} />
             </button>
-            <p className="text-xs sm:text-sm text-navy-300">
-              Welcome back,{' '}
-              <span className="font-semibold text-navy">admin@cvdigitalcreative.media</span>
-            </p>
+
+            <div>
+              <p className="text-xs text-navy-300 flex items-center gap-1.5">
+                <span>Selamat datang kembali,</span>
+                <span className="font-semibold text-navy">admin@cvdigitalcreative.media</span>
+              </p>
+            </div>
           </div>
 
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full bg-gold/20 text-navy font-bold text-xs flex items-center justify-center border border-gold/30">
-              AD
-            </div>
+            <button
+              onClick={() => setActiveTab('requests')}
+              className="relative p-2.5 rounded-xl border border-border bg-white text-navy-400 hover:text-navy hover:border-gold/50 transition-all"
+              title="Notifikasi Kolaborasi"
+            >
+              <Bell size={18} />
+              {pendingRequests > 0 && (
+                <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 rounded-full bg-amber-500 ring-2 ring-white" />
+              )}
+            </button>
+
+            <a
+              href="/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hidden sm:inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-navy text-white text-xs font-semibold hover:bg-navy-800 transition-all shadow-xs"
+            >
+              <ExternalLink size={14} />
+              <span>Preview Web</span>
+            </a>
           </div>
         </header>
 
-        {/* Body Container */}
-        <main className="p-6 md:p-8 flex-1 max-w-6xl w-full mx-auto">
+        {/* Main Body */}
+        <main className="p-6 md:p-8 flex-1 max-w-7xl w-full mx-auto">
+          {/* TAB: DASHBOARD */}
           {activeTab === 'dashboard' && (
             <div className="space-y-8 animate-fade-in">
-              {/* Header Title */}
-              <div>
-                <h1 className="text-2xl md:text-3xl font-bold text-navy tracking-tight">
-                  Dashboard
-                </h1>
-                <p className="text-navy-300 text-sm mt-1">
-                  Overview of your website content and activity.
-                </p>
+              {/* Hero Banner inside Dashboard */}
+              <div className="relative rounded-3xl bg-gradient-to-r from-navy-900 via-navy to-navy-800 p-6 md:p-8 text-white overflow-hidden shadow-lg">
+                <div className="absolute right-0 top-0 bottom-0 w-1/3 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-gold/20 via-transparent to-transparent pointer-events-none" />
+
+                <div className="relative z-10 max-w-2xl">
+                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md border border-white/15 text-gold text-xs font-semibold mb-3">
+                    <Sparkles size={13} />
+                    <span>Executive Overview</span>
+                  </div>
+                  <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-white">
+                    Dashboard Administrasi
+                  </h1>
+                  <p className="text-white/70 text-sm mt-1.5 leading-relaxed">
+                    Kelola seluruh konten, publikasi artikel, portfolio karya kreatif, serta tindak lanjuti permintaan kerja sama dari calon partner DCM secara real-time.
+                  </p>
+                </div>
               </div>
 
-              {/* Stats Cards */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+              {/* 4 Stats Cards */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-5">
                 {stats.map((stat, i) => {
                   const Icon = stat.icon;
                   return (
                     <div
                       key={i}
-                      className="bg-white rounded-2xl border border-border p-6 shadow-sm hover:shadow-md hover:border-gold/40 transition-all group"
+                      className="bg-white rounded-3xl border border-border/80 p-6 shadow-sm hover:shadow-xl hover:border-gold/40 hover:-translate-y-1 transition-all duration-200 group flex flex-col justify-between"
                     >
-                      <div className="flex items-center justify-between">
+                      <div className="flex items-center justify-between mb-4">
                         <div
-                          className={`w-11 h-11 rounded-xl ${stat.bg} ${stat.color} flex items-center justify-center`}
+                          className={`w-12 h-12 rounded-2xl ${stat.bg} ${stat.color} flex items-center justify-center transition-transform group-hover:scale-105`}
                         >
-                          <Icon size={20} />
+                          <Icon size={22} />
                         </div>
-                        <ArrowUpRight
-                          size={18}
-                          className="text-navy-200 group-hover:text-gold group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all"
-                        />
+                        <span className="text-[11px] font-bold px-2.5 py-1 rounded-full bg-offwhite text-navy-400 border border-border">
+                          {stat.badge}
+                        </span>
                       </div>
-                      <div className="mt-5">
-                        <div className="text-3xl font-bold text-navy tracking-tight">
+
+                      <div>
+                        <div className="text-3xl font-black text-navy tracking-tight">
                           {stat.value}
                         </div>
-                        <p className="text-xs text-navy-300 font-medium mt-1">{stat.label}</p>
+                        <p className="text-xs font-bold text-navy-400 mt-1">{stat.label}</p>
+                        <p className="text-[11px] text-navy-300 mt-0.5">{stat.trend}</p>
                       </div>
                     </div>
                   );
                 })}
               </div>
 
-              {/* Recent Collaboration Requests */}
-              <div className="bg-white rounded-2xl border border-border overflow-hidden shadow-sm">
-                <div className="px-6 py-5 border-b border-border flex items-center justify-between">
-                  <h2 className="text-lg font-bold text-navy">Recent Collaboration Requests</h2>
+              {/* Recent Collaboration Requests Section */}
+              <div className="bg-white rounded-3xl border border-border/80 shadow-sm overflow-hidden">
+                <div className="px-6 py-5 border-b border-border flex items-center justify-between bg-gradient-to-r from-offwhite/50 via-white to-offwhite/50">
+                  <div>
+                    <h2 className="text-lg font-bold text-navy tracking-tight">
+                      Recent Collaboration Requests
+                    </h2>
+                    <p className="text-xs text-navy-300 mt-0.5">
+                      Pengajuan kerja sama terbaru yang masuk melalui website
+                    </p>
+                  </div>
+
                   <button
                     onClick={() => setActiveTab('requests')}
-                    className="text-gold hover:text-gold-600 text-sm font-semibold transition-colors"
+                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gold/15 text-gold-700 hover:bg-gold/25 font-bold text-xs transition-all cursor-pointer group"
                   >
-                    View All
+                    <span>View All</span>
+                    <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
                   </button>
                 </div>
 
-                <div className="divide-y divide-border">
-                  {recentRequests.map((req) => (
-                    <div
-                      key={req.id}
-                      className="px-6 py-4 flex items-center justify-between hover:bg-offwhite/50 transition-colors"
-                    >
-                      <div className="flex items-center gap-3.5">
-                        <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 ring-4 ring-emerald-100 shrink-0" />
-                        <div>
-                          <p className="text-sm font-semibold text-navy capitalize">{req.name}</p>
-                          <p className="text-xs text-navy-300 lowercase">{req.email}</p>
-                        </div>
-                      </div>
+                {requests.length === 0 ? (
+                  <div className="p-10 text-center text-navy-300">
+                    <Inbox size={32} className="mx-auto mb-2 opacity-50" />
+                    <p className="text-sm font-semibold">Belum ada permintaan kolaborasi</p>
+                  </div>
+                ) : (
+                  <div className="divide-y divide-border">
+                    {requests.slice(0, 5).map((req) => {
+                      const badge = getStatusBadge(req.status);
+                      const BadgeIcon = badge.icon;
+                      const initials = req.name
+                        .split(' ')
+                        .map((w) => w[0])
+                        .slice(0, 2)
+                        .join('')
+                        .toUpperCase();
 
-                      <div className="flex items-center gap-4">
-                        <span className="text-xs text-navy-300 font-medium">{req.date}</span>
-                        <span className="inline-flex items-center gap-1 px-3 py-1 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-full text-xs font-semibold">
-                          <CheckCircle2 size={12} />
-                          {req.status}
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                      return (
+                        <div
+                          key={req.id}
+                          onClick={() => setSelectedRequest(req)}
+                          className="px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-offwhite/60 transition-colors cursor-pointer group"
+                        >
+                          <div className="flex items-center gap-3.5 min-w-0">
+                            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-navy to-navy-700 text-white font-bold text-xs flex items-center justify-center shrink-0 shadow-2xs group-hover:scale-105 transition-transform">
+                              {initials}
+                            </div>
+                            <div className="min-w-0">
+                              <p className="text-sm font-bold text-navy capitalize truncate group-hover:text-gold-700 transition-colors">
+                                {req.name}
+                              </p>
+                              <div className="flex items-center gap-2 text-xs text-navy-300">
+                                <span className="lowercase truncate">{req.email}</span>
+                                {req.company && (
+                                  <>
+                                    <span>•</span>
+                                    <span className="text-navy-400 font-medium">{req.company}</span>
+                                  </>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center justify-between sm:justify-end gap-4 shrink-0 pl-13 sm:pl-0">
+                            <span className="text-xs text-navy-300 font-medium">{req.date}</span>
+                            <span
+                              className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border ${badge.bg}`}
+                            >
+                              <BadgeIcon size={12} />
+                              <span>{badge.label}</span>
+                            </span>
+                            <ArrowUpRight
+                              size={16}
+                              className="text-navy-200 group-hover:text-gold transition-colors hidden sm:block"
+                            />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             </div>
           )}
 
-          {activeTab !== 'dashboard' && (
-            <div className="bg-white rounded-2xl border border-border p-12 text-center animate-fade-in">
-              <div className="max-w-md mx-auto">
-                <div className="w-14 h-14 bg-navy-50 text-navy rounded-2xl flex items-center justify-center mx-auto mb-4">
-                  {activeTab === 'portfolio' && <Briefcase size={26} />}
-                  {activeTab === 'articles' && <FileText size={26} />}
-                  {activeTab === 'requests' && <Inbox size={26} />}
-                </div>
-                <h3 className="text-xl font-bold text-navy capitalize">{activeTab} Management</h3>
-                <p className="text-navy-300 text-sm mt-2">
-                  Halaman ini siap untuk diintegrasikan sesuai dengan kebutuhan konten yang akan kamu
-                  berikan nanti.
-                </p>
+          {/* TAB: REQUESTS (Collaboration Requests - Image 2) */}
+          {activeTab === 'requests' && (
+            <CollaborationRequests
+              requests={requests}
+              onSelectRequest={(req) => setSelectedRequest(req)}
+              onUpdateStatus={handleUpdateStatus}
+            />
+          )}
+
+          {/* TAB: PORTFOLIO & ARTICLES PLACEHOLDERS */}
+          {(activeTab === 'portfolio' || activeTab === 'articles') && (
+            <div className="bg-white rounded-3xl border border-border p-12 text-center shadow-sm animate-fade-in max-w-2xl mx-auto">
+              <div className="w-16 h-16 rounded-3xl bg-gold/15 text-gold-700 flex items-center justify-center mx-auto mb-4">
+                {activeTab === 'portfolio' ? <Briefcase size={30} /> : <FileText size={30} />}
+              </div>
+              <h2 className="text-2xl font-bold text-navy capitalize">
+                {activeTab} Management
+              </h2>
+              <p className="text-navy-300 text-sm mt-2 max-w-md mx-auto leading-relaxed">
+                Halaman ini sudah disiapkan dan siap menerima instruksi detail berikutnya (tambah, edit, dan hapus data {activeTab}) sesuai arahan kamu.
+              </p>
+              <div className="mt-8 flex items-center justify-center gap-3">
                 <button
                   onClick={() => setActiveTab('dashboard')}
-                  className="mt-6 inline-flex items-center gap-2 px-5 py-2.5 bg-navy text-white text-xs font-semibold rounded-xl hover:bg-navy-700 transition-all"
+                  className="px-5 py-2.5 rounded-xl bg-navy text-white text-xs font-semibold hover:bg-navy-800 transition-all cursor-pointer"
                 >
                   Kembali ke Dashboard
+                </button>
+                <button
+                  onClick={() => setActiveTab('requests')}
+                  className="px-5 py-2.5 rounded-xl border border-border bg-offwhite text-navy text-xs font-semibold hover:bg-white transition-all cursor-pointer"
+                >
+                  Buka Menu Requests
                 </button>
               </div>
             </div>
           )}
         </main>
       </div>
+
+      {/* DETAIL MODAL (Image 3) */}
+      <RequestDetailModal
+        request={selectedRequest}
+        onClose={() => setSelectedRequest(null)}
+        onUpdateStatus={handleUpdateStatus}
+        onDelete={handleDeleteRequest}
+      />
     </div>
   );
 }
